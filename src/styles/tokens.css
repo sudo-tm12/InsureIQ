@@ -1,0 +1,87 @@
+:root {
+  /* Color — Primary */
+  --color-navy: #0b2d78;
+  --color-blue: #1a5fbf;
+  --color-mid: #2d84d8;
+  --color-bright: #4baef0;
+  --color-cyan: #5dcde6;
+
+  /* Color — Dark */
+  --color-indigo: #071840;
+  --color-ink: #0a1b2e;
+
+  /* Color — Neutral */
+  --color-white: #ffffff;
+  --color-cloud: #f4f8fb;
+  --color-border: #e2eaf4;
+  --color-muted: #6b7a8f;
+  --color-body: #3a4655;
+
+  /* Color — Semantic */
+  --color-success: #27ae60;
+  --color-warning: #f39c12;
+  --color-error: #e74c3c;
+  --color-info: #2d84d8;
+
+  /* Gradients */
+  --gradient-brand: linear-gradient(135deg, #0b2d78 0%, #1a5fbf 55%, #4baef0 100%);
+  --gradient-dark: linear-gradient(145deg, #071840 0%, #0b2d78 100%);
+  --gradient-subtle: linear-gradient(180deg, #f4f8fb 0%, #ffffff 100%);
+
+  /* Typography — Scale */
+  --text-display: clamp(48px, 7vw, 96px);
+  --text-h1: clamp(36px, 5vw, 64px);
+  --text-h2: clamp(28px, 4vw, 48px);
+  --text-h3: clamp(22px, 3vw, 32px);
+  --text-h4: clamp(18px, 2vw, 24px);
+  --text-body-lg: 18px;
+  --text-body: 16px;
+  --text-body-sm: 14px;
+  --text-label: 12px;
+  --text-micro: 11px;
+
+  /* Typography — Letter spacing */
+  --tracking-tight: -0.02em;
+  --tracking-normal: 0em;
+  --tracking-wide: 0.05em;
+  --tracking-wider: 0.1em;
+  --tracking-widest: 0.2em;
+
+  /* Typography — Line height */
+  --leading-tight: 1.1;
+  --leading-snug: 1.2;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.7;
+  --leading-loose: 2;
+
+  /* Spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+  --space-24: 96px;
+  --space-32: 128px;
+  --space-40: 160px;
+  --space-48: 192px;
+
+  /* Section padding */
+  --section-padding-mobile: 64px;
+  --section-padding-tablet: 96px;
+  --section-padding-desktop: 128px;
+
+  /* Containers */
+  --container-narrow: 768px;
+  --container-max: 1280px;
+  --container-wide: 1440px;
+
+  /* Motion */
+  --transition-fast: all 150ms ease-out;
+  --transition-base: all 250ms ease-out;
+  --transition-slow: all 400ms ease-out;
+}
