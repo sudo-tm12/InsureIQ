@@ -43,3 +43,11 @@ tsc.log
 # lighthouse reports
 lighthouse-report*.json
 *.report.html
+
+# local QA artifacts — screenshots dropped at the repo root during browser
+# testing. Real image assets live under public/, which is unaffected.
+/*.png
+/.playwright-mcp/
+
+# claude code — launch.json is shared, local settings are not
+.claude/settings.local.json

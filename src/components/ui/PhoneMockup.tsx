@@ -1,3 +1,4 @@
+import { Logo } from '@/components/ui/Logo'
 import { cn } from '@/lib/utils'
 
 export interface PhoneMockupProps {
@@ -20,9 +21,7 @@ function QuoteUI() {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-          <span style={{ fontWeight: 700, color: '#ffffff', fontSize: '13px', lineHeight: 1 }}>
-            INSURI<span style={{ color: '#5DCDE6' }}>Q</span>
-          </span>
+          <Logo variant="reverse" linkToHome={false} decorative sizes="56px" className="h-[14px] w-auto" />
           <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '8px' }}>FSCA Licensed</span>
         </div>
         <p

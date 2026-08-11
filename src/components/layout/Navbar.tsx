@@ -6,6 +6,7 @@ import { useState, useEffect, useRef } from 'react'
 import { MessageCircle, ChevronRight, ShieldCheck } from 'lucide-react'
 import { NAV_LINKS, WHATSAPP_URL } from '@/lib/constants'
 import { Button } from '@/components/ui/Button'
+import { Logo } from '@/components/ui/Logo'
 import { cn } from '@/lib/utils'
 
 export function Navbar() {
@@ -114,20 +115,33 @@ export function Navbar() {
       >
         <div className="mx-auto px-5 sm:px-6 lg:px-8 max-w-6xl">
           <div className="flex items-center justify-between h-16 lg:h-20">
-            {/* Logo */}
+            {/* Logo — both lockups are stacked and cross-faded so the swap rides
+                the navbar's own 400ms surface transition instead of flashing. */}
             <Link
               href="/"
-              className="flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-cyan rounded"
+              className="relative flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-cyan rounded"
               aria-label="InsurIQ — home"
             >
-              <span
+              <Logo
+                variant="default"
+                linkToHome={false}
+                decorative
+                priority
                 className={cn(
-                  'font-display font-bold text-xl lg:text-2xl leading-none transition-colors duration-[400ms]',
-                  isOverDark ? 'text-white' : 'text-brand-navy',
+                  'h-8 lg:h-10 w-auto transition-opacity duration-[400ms] ease-out',
+                  isOverDark ? 'opacity-0' : 'opacity-100',
                 )}
-              >
-                INSURI<span className="text-brand-cyan">Q</span>
-              </span>
+              />
+              <Logo
+                variant="reverse"
+                linkToHome={false}
+                decorative
+                priority
+                className={cn(
+                  'absolute inset-0 h-8 lg:h-10 w-auto transition-opacity duration-[400ms] ease-out',
+                  isOverDark ? 'opacity-100' : 'opacity-0',
+                )}
+              />
             </Link>
 
             {/* Desktop nav */}
@@ -212,16 +226,7 @@ export function Navbar() {
         >
           {/* Top row: logo + close */}
           <div className="flex items-center justify-between mb-12">
-            <Link
-              href="/"
-              onClick={closeMenu}
-              aria-label="InsurIQ — home"
-              className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-cyan rounded"
-            >
-              <span className="font-display font-bold text-xl leading-none text-white">
-                INSURI<span className="text-brand-cyan">Q</span>
-              </span>
-            </Link>
+            <Logo variant="reverse" className="h-7 w-auto" onClick={closeMenu} />
             <button
               onClick={closeMenu}
               aria-label="Close navigation menu"

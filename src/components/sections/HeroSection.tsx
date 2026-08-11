@@ -230,10 +230,15 @@ export function HeroSection() {
         aria-hidden="true"
       />
 
-      {/* Sentinel — IntersectionObserver target for Navbar */}
+      {/* Sentinel — IntersectionObserver target for Navbar.
+          Spans the hero minus the navbar band (h-16 / lg:h-20), so the navbar
+          flips to its light treatment exactly as the hero's bottom edge passes
+          under it. Must not be a strip at the hero's bottom edge: the hero can
+          grow past 100svh when its content overflows, which puts such a strip
+          below the fold and leaves the navbar stuck in light-on-dark. */}
       <div
         id="hero-sentinel"
-        className="absolute bottom-0 left-0 right-0 h-1 pointer-events-none"
+        className="absolute inset-x-0 top-0 bottom-16 lg:bottom-20 pointer-events-none"
         aria-hidden="true"
       />
     </section>

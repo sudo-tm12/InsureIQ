@@ -12,6 +12,7 @@ import {
   SOCIAL_LINKS,
 } from '@/lib/constants'
 import { FooterNewsletter } from '@/components/layout/FooterNewsletter'
+import { Logo } from '@/components/ui/Logo'
 import { cn } from '@/lib/utils'
 
 function IconLinkedIn({ className }: { className?: string }) {
@@ -179,13 +180,9 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-0 md:gap-12 py-10 md:py-16 lg:py-20">
           {/* Column 1: Brand — always visible */}
           <div className="md:col-span-2 lg:col-span-1 mb-8 md:mb-0">
-            <div className="mb-1">
-              <span className="font-display font-bold text-2xl text-white leading-none">INSURI</span>
-              <span className="font-display font-bold text-2xl text-brand-cyan leading-none">Q</span>
-            </div>
-            <p className="text-xs text-white/35 font-body uppercase tracking-widest mb-4">
-              Intelligent Insurance Solutions
-            </p>
+            {/* The lockup already carries "Intelligent Insurance Solutions", so
+                it is not repeated as text below. */}
+            <Logo variant="reverse" className="h-10 w-auto mb-4" />
             <p className="text-sm text-white/60 leading-relaxed mb-6 max-w-xs">
               {SITE.tagline}
             </p>
