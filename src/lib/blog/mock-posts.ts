@@ -61,7 +61,7 @@ To work out whether you are overpaying, you need three numbers: your current out
   {
     slug: 'fais-compliance-what-it-means-for-you',
     title: 'FAIS Compliance: What It Means for You as a Client',
-    coverImage: '/images/blog/FAIS_Compliance.png',
+    coverImage: '/images/blog/fais-compliance.png',
     excerpt:
       'When an FSP says they are FAIS compliant, what does that actually mean? We explain your rights under the Financial Advisory and Intermediary Services Act.',
     content: `The Financial Advisory and Intermediary Services Act — known simply as FAIS — is the primary piece of legislation that governs how financial advisors and intermediaries in South Africa must treat their clients. If you have ever worked with an insurance broker, financial planner, or investment advisor, FAIS is the law that is supposed to protect you. But most South Africans have never heard of it.
@@ -103,7 +103,7 @@ The key difference: debt review provides legal protection and is designed for co
   {
     slug: 'what-happens-to-your-debt-when-you-die',
     title: 'What Happens to Your Debt When You Die?',
-    coverImage: '/images/blog/what-happens-to-your-debt-when-you-die.jpg',
+    coverImage: '/images/blog/what-happens-to-your-debt-when-you-die.png',
     excerpt:
       'Many South Africans do not realise their debt does not simply disappear when they pass. Here is what your family needs to know — and how to protect them.',
     content: `It is a conversation most of us avoid — but the financial consequences of dying with outstanding debt can be severe for the people we leave behind. The common misconception is that debt dies with the debtor. In most cases, it does not.
@@ -124,7 +124,7 @@ This is exactly the risk that credit life insurance is designed to address. A we
   {
     slug: 'retrenchment-cover-south-africa-guide',
     title: 'Retrenchment Cover in South Africa: A Complete Guide',
-    coverImage: '/images/blog/what-happens-to-your-debt-when-you-die.jpg',
+    coverImage: '/images/blog/retrenchment-cover-south-africa-guide.png',
     excerpt:
       'Retrenchment is one of the most common credit life insurance claims. Here is what you need to know about cover, qualifying criteria, and how to claim.',
     content: `Retrenchment — being dismissed due to operational requirements rather than personal performance — is one of the most financially disruptive events a South African household can face. It is also, statistically, one of the most common triggers for credit life insurance claims. Yet many policyholders do not fully understand what their cover includes, when it applies, or how to claim when the time comes.
