@@ -180,9 +180,14 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-0 md:gap-12 py-10 md:py-16 lg:py-20">
           {/* Column 1: Brand — always visible */}
           <div className="md:col-span-2 lg:col-span-1 mb-8 md:mb-0">
-            {/* The lockup already carries "Intelligent Insurance Solutions", so
-                it is not repeated as text below. */}
-            <Logo variant="reverse" className="h-10 w-auto mb-4" />
+            {/* The lockup's own tagline is 8.7% of its height — about 4px at any
+                size this column can hold — so the slogan is set as live text
+                instead. That also makes it readable by screen readers and
+                search engines, which pixels in the lockup never were. */}
+            <Logo variant="reverse" sizes="260px" className="h-14 w-auto mb-3" />
+            <p className="text-xs text-white/70 font-body uppercase tracking-widest mb-4">
+              Intelligent Insurance Solutions
+            </p>
             <p className="text-sm text-white/60 leading-relaxed mb-6 max-w-xs">
               {SITE.tagline}
             </p>

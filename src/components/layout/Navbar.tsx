@@ -127,8 +127,9 @@ export function Navbar() {
                 linkToHome={false}
                 decorative
                 priority
+                sizes="220px"
                 className={cn(
-                  'h-8 lg:h-10 w-auto transition-opacity duration-[400ms] ease-out',
+                  'h-11 lg:h-14 w-auto transition-opacity duration-[400ms] ease-out',
                   isOverDark ? 'opacity-0' : 'opacity-100',
                 )}
               />
@@ -137,8 +138,9 @@ export function Navbar() {
                 linkToHome={false}
                 decorative
                 priority
+                sizes="220px"
                 className={cn(
-                  'absolute inset-0 h-8 lg:h-10 w-auto transition-opacity duration-[400ms] ease-out',
+                  'absolute inset-0 h-11 lg:h-14 w-auto transition-opacity duration-[400ms] ease-out',
                   isOverDark ? 'opacity-100' : 'opacity-0',
                 )}
               />
@@ -226,7 +228,7 @@ export function Navbar() {
         >
           {/* Top row: logo + close */}
           <div className="flex items-center justify-between mb-12">
-            <Logo variant="reverse" className="h-7 w-auto" onClick={closeMenu} />
+            <Logo variant="reverse" sizes="220px" className="h-11 w-auto" onClick={closeMenu} />
             <button
               onClick={closeMenu}
               aria-label="Close navigation menu"
