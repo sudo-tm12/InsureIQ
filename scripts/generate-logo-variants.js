@@ -1,11 +1,11 @@
 'use strict'
 /**
- * Regenerates the light-on-dark ("reverse") InsurIQ logo from the master asset.
+ * Regenerates every derived InsurIQ logo variant from the master asset.
  *
- *   node scripts/generate-reverse-logo.js
+ *   node scripts/generate-logo-variants.js
  *
  * Run this whenever public/images/logo/insuriq-logo.png changes. The master is
- * only ever read; this writes insuriq-logo-reverse.png beside it.
+ * only ever read; this writes the variants beside it.
  *
  * Bundles a minimal 8-bit PNG codec so the repo needs no image dependency.
  */
@@ -192,56 +192,94 @@ function liftToFloor(r, g, b) {
   ]
 }
 
-const img = decode(fs.readFileSync(SRC))
-const { width, height, channels: ch, data } = img
-if (ch !== 4) throw new Error('expected RGBA master')
+// The lockup's own tagline occupies y311-346 of the 414px canvas — 8.7% of the
+// rendered height, which is ~4px anywhere the UI can actually place the mark.
+// The compact variants clear it so the slogan can be set as live text instead.
+// The wordmark ends at y297, so y303 is inside the empty band between them.
+const TAGLINE_TOP = 303
 
-let whitened = 0
-let lifted = 0
-
-for (let y = 0; y < height; y++) {
-  for (let x = 0; x < width; x++) {
-    const o = (y * width + x) * ch
+/** Every opaque pixel's worst contrast against the dark surfaces. */
+function auditAgainstDark(img) {
+  const { width, height, channels: ch, data } = img
+  let worst = Infinity, worstPx = null
+  const seen = new Set()
+  for (let i = 0; i < width * height; i++) {
+    const o = i * ch
     if (data[o + 3] === 0) continue
+    const key = (data[o] >> 3 << 10) | (data[o + 1] >> 3 << 5) | (data[o + 2] >> 3)
+    if (seen.has(key)) continue
+    seen.add(key)
+    const c = ratio([data[o], data[o + 1], data[o + 2]], DARK_BG)
+    if (c < worst) { worst = c; worstPx = [data[o], data[o + 1], data[o + 2]] }
+  }
+  return { worst, worstPx }
+}
 
-    if (x >= SPLIT) {
-      // Wordmark + tagline -> white
-      data[o] = 255; data[o + 1] = 255; data[o + 2] = 255
-      whitened++
-      continue
-    }
+/**
+ * @param {object} opts
+ * @param {boolean} opts.reverse    wordmark to white, icon lifted for dark surfaces
+ * @param {boolean} opts.dropTagline clear the baked strapline
+ */
+function build({ reverse, dropTagline }) {
+  const img = decode(fs.readFileSync(SRC))
+  const { width, height, channels: ch, data } = img
+  if (ch !== 4) throw new Error('expected RGBA master')
 
-    const next = liftToFloor(data[o], data[o + 1], data[o + 2])
-    if (next) {
-      data[o] = next[0]; data[o + 1] = next[1]; data[o + 2] = next[2]
-      lifted++
+  let cleared = 0, whitened = 0, lifted = 0
+
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const o = (y * width + x) * ch
+      if (data[o + 3] === 0) continue
+
+      if (dropTagline && x >= SPLIT && y >= TAGLINE_TOP) {
+        data[o] = 0; data[o + 1] = 0; data[o + 2] = 0; data[o + 3] = 0
+        cleared++
+        continue
+      }
+
+      if (!reverse) continue
+
+      if (x >= SPLIT) {
+        data[o] = 255; data[o + 1] = 255; data[o + 2] = 255
+        whitened++
+        continue
+      }
+
+      const next = liftToFloor(data[o], data[o + 1], data[o + 2])
+      if (next) {
+        data[o] = next[0]; data[o + 1] = next[1]; data[o + 2] = next[2]
+        lifted++
+      }
     }
   }
+
+  return { img, cleared, whitened, lifted }
 }
 
-fs.mkdirSync(path.dirname(OUT), { recursive: true })
-fs.writeFileSync(OUT, encode(img))
+const VARIANTS = [
+  { file: 'insuriq-logo-reverse.png', reverse: true, dropTagline: false },
+  { file: 'insuriq-logo-compact.png', reverse: false, dropTagline: true },
+  { file: 'insuriq-logo-compact-reverse.png', reverse: true, dropTagline: true },
+]
 
-const srcSize = fs.statSync(SRC).size
-const outSize = fs.statSync(OUT).size
-console.log('wrote', OUT)
-console.log('  wordmark px -> white :', whitened)
-console.log('  icon px lifted       :', lifted)
-console.log('  master', (srcSize / 1024).toFixed(1) + 'KB (untouched) -> reverse', (outSize / 1024).toFixed(1) + 'KB')
+fs.mkdirSync(path.join(ROOT, 'public/images/logo'), { recursive: true })
+console.log('master:', (fs.statSync(SRC).size / 1024).toFixed(1) + 'KB (never modified)\n')
 
-// Contrast audit of the result against the dark surfaces it will sit on
-const BG = DARK_BG
-let worstOpaque = Infinity, worstPx = null
-const seen = new Set()
-for (let i = 0; i < width * height; i++) {
-  const o = i * ch
-  if (data[o + 3] === 0) continue
-  const key = (data[o] >> 3 << 10) | (data[o + 1] >> 3 << 5) | (data[o + 2] >> 3)
-  if (seen.has(key)) continue
-  seen.add(key)
-  const c = ratio([data[o], data[o + 1], data[o + 2]], BG)
-  if (c < worstOpaque) { worstOpaque = c; worstPx = [data[o], data[o + 1], data[o + 2]] }
+for (const v of VARIANTS) {
+  const out = path.join(ROOT, 'public/images/logo', v.file)
+  const { img, cleared, whitened, lifted } = build(v)
+  fs.writeFileSync(out, encode(img))
+
+  const bits = []
+  if (cleared) bits.push('tagline px cleared ' + cleared)
+  if (whitened) bits.push('wordmark px -> white ' + whitened)
+  if (lifted) bits.push('icon px lifted ' + lifted)
+  console.log(v.file.padEnd(34), (fs.statSync(out).size / 1024).toFixed(1) + 'KB')
+  console.log('  ' + bits.join(' | '))
+  if (v.reverse) {
+    const { worst, worstPx } = auditAgainstDark(img)
+    console.log('  vs #071840: white wordmark ' + ratio([255, 255, 255], DARK_BG).toFixed(2) +
+      ':1, worst opaque ' + worst.toFixed(2) + ':1 rgb(' + worstPx.join(',') + ')')
+  }
 }
-console.log('\ncontrast vs #071840:')
-console.log('  white wordmark :', ratio([255, 255, 255], BG).toFixed(2) + ':1')
-console.log('  worst opaque px:', ratio(worstPx, BG).toFixed(2) + ':1', 'rgb(' + worstPx.join(',') + ')')

@@ -11,6 +11,13 @@ const LOGO_SRC = {
   default: '/images/logo/insuriq-logo.png',
   /** White wordmark — for navy and indigo surfaces. Derived from the master. */
   reverse: '/images/logo/insuriq-logo-reverse.png',
+  /**
+   * Icon + wordmark, no strapline. The master's baked strapline is 8.7% of its
+   * height — about 4px anywhere the UI can place the mark — so in chrome it
+   * reads as smudge. Use these and set the slogan as live text alongside.
+   */
+  compact: '/images/logo/insuriq-logo-compact.png',
+  'compact-reverse': '/images/logo/insuriq-logo-compact-reverse.png',
 } as const
 
 export type LogoVariant = keyof typeof LOGO_SRC

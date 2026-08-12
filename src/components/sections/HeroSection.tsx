@@ -129,7 +129,7 @@ export function HeroSection() {
       />
 
       {/* Main content — grows to fill section height */}
-      <Container className="relative w-full max-w-full flex-1 flex flex-col pt-28 pb-10 lg:pt-20 lg:pb-10 lg:justify-center lg:max-w-6xl">
+      <Container className="relative w-full max-w-full flex-1 flex flex-col pt-32 pb-10 lg:pt-24 lg:pb-10 lg:justify-center lg:max-w-6xl">
         <motion.div
           className="flex-1 flex flex-col lg:grid lg:grid-cols-12 lg:gap-8 lg:items-center lg:flex-none"
           style={{ y: parallax(contentY), opacity: parallax(contentOpacity) }}
@@ -334,14 +334,14 @@ export function HeroSection() {
       />
 
       {/* Sentinel — IntersectionObserver target for Navbar.
-          Spans the hero minus the navbar band (h-16 / lg:h-20), so the navbar
+          Spans the hero minus the navbar band (h-20 / lg:h-24), so the navbar
           flips to its light treatment exactly as the hero's bottom edge passes
           under it. Must not be a strip at the hero's bottom edge: the hero can
           grow past 100svh when its content overflows, which puts such a strip
           below the fold and leaves the navbar stuck in light-on-dark. */}
       <div
         id="hero-sentinel"
-        className="absolute inset-x-0 top-0 bottom-16 lg:bottom-20 pointer-events-none"
+        className="absolute inset-x-0 top-0 bottom-20 lg:bottom-24 pointer-events-none"
         aria-hidden="true"
       />
     </section>

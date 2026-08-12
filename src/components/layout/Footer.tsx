@@ -184,7 +184,7 @@ export function Footer() {
                 size this column can hold — so the slogan is set as live text
                 instead. That also makes it readable by screen readers and
                 search engines, which pixels in the lockup never were. */}
-            <Logo variant="reverse" sizes="260px" className="h-14 w-auto mb-3" />
+            <Logo variant="compact-reverse" sizes="260px" className="h-14 w-auto mb-3" />
             <p className="text-xs text-white/70 font-body uppercase tracking-widest mb-4">
               Intelligent Insurance Solutions
             </p>

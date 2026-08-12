@@ -114,36 +114,55 @@ export function Navbar() {
         )}
       >
         <div className="mx-auto px-5 sm:px-6 lg:px-8 max-w-6xl">
-          <div className="flex items-center justify-between h-16 lg:h-20">
-            {/* Logo — both lockups are stacked and cross-faded so the swap rides
-                the navbar's own 400ms surface transition instead of flashing. */}
+          {/* Taller than a bare-logo bar because the brand block is two lines:
+              lockup + slogan. Keep #hero-sentinel's bottom inset in sync. */}
+          <div className="flex items-center justify-between h-20 lg:h-24">
+            {/* Brand block — the compact lockup with the slogan set as live text
+                beneath it. The master's baked strapline renders ~4px at any size
+                this bar can hold, so it is dropped from the mark and set as type
+                instead, which is legible and machine-readable.
+                Both lockups are stacked and cross-faded so the swap rides the
+                navbar's own 400ms surface transition instead of flashing. */}
             <Link
               href="/"
-              className="relative flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-cyan rounded"
-              aria-label="InsurIQ — home"
+              className="flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-cyan rounded"
+              aria-label="InsurIQ — Intelligent Insurance Solutions, home"
             >
-              <Logo
-                variant="default"
-                linkToHome={false}
-                decorative
-                priority
-                sizes="220px"
+              <span className="relative block">
+                <Logo
+                  variant="compact"
+                  linkToHome={false}
+                  decorative
+                  priority
+                  sizes="220px"
+                  className={cn(
+                    'h-11 lg:h-14 w-auto transition-opacity duration-[400ms] ease-out',
+                    isOverDark ? 'opacity-0' : 'opacity-100',
+                  )}
+                />
+                <Logo
+                  variant="compact-reverse"
+                  linkToHome={false}
+                  decorative
+                  priority
+                  sizes="220px"
+                  className={cn(
+                    'absolute inset-0 h-11 lg:h-14 w-auto transition-opacity duration-[400ms] ease-out',
+                    isOverDark ? 'opacity-100' : 'opacity-0',
+                  )}
+                />
+              </span>
+              <span
+                aria-hidden="true"
                 className={cn(
-                  'h-11 lg:h-14 w-auto transition-opacity duration-[400ms] ease-out',
-                  isOverDark ? 'opacity-0' : 'opacity-100',
+                  'block font-body uppercase leading-none whitespace-nowrap',
+                  'text-[9px] lg:text-[10px] tracking-[0.12em] mt-1 lg:mt-1.5',
+                  'transition-colors duration-[400ms] ease-out',
+                  isOverDark ? 'text-white/75' : 'text-brand-navy/70',
                 )}
-              />
-              <Logo
-                variant="reverse"
-                linkToHome={false}
-                decorative
-                priority
-                sizes="220px"
-                className={cn(
-                  'absolute inset-0 h-11 lg:h-14 w-auto transition-opacity duration-[400ms] ease-out',
-                  isOverDark ? 'opacity-100' : 'opacity-0',
-                )}
-              />
+              >
+                Intelligent Insurance Solutions
+              </span>
             </Link>
 
             {/* Desktop nav */}
@@ -228,7 +247,20 @@ export function Navbar() {
         >
           {/* Top row: logo + close */}
           <div className="flex items-center justify-between mb-12">
-            <Logo variant="reverse" sizes="220px" className="h-11 w-auto" onClick={closeMenu} />
+            <Link
+              href="/"
+              onClick={closeMenu}
+              className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-cyan rounded"
+              aria-label="InsurIQ — Intelligent Insurance Solutions, home"
+            >
+              <Logo variant="compact-reverse" linkToHome={false} decorative sizes="220px" className="h-11 w-auto" />
+              <span
+                aria-hidden="true"
+                className="block font-body uppercase leading-none whitespace-nowrap text-[9px] tracking-[0.12em] mt-1 text-white/75"
+              >
+                Intelligent Insurance Solutions
+              </span>
+            </Link>
             <button
               onClick={closeMenu}
               aria-label="Close navigation menu"
