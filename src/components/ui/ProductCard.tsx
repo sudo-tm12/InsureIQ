@@ -113,7 +113,8 @@ export function ProductCard({
               40%
             </p>
             <p className="text-white/55 text-sm font-body leading-snug">
-              compared to bundled bank credit life rates — based on NCA prescribed maximum benchmarks.
+              compared to what most lenders charge on your outstanding balance — estimated per
+              account from real provider rates.
             </p>
           </div>
         </div>
