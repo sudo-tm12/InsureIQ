@@ -13,9 +13,9 @@ import {
   type StoredLead,
 } from './store'
 
-function leadsFile(): string {
-  return process.env.LEADS_FILE ?? path.join(process.cwd(), '.data', 'leads.jsonl')
-}
+// Statically scoped to the .data subfolder so Turbopack's output tracing stays
+// scoped to this store's inputs instead of the whole project.
+const LEADS_FILE = path.join(process.cwd(), '.data', 'leads.jsonl')
 
 export function storeLeadInFile(payload: LeadPayload): { id: string; createdAt: string } {
   const record: StoredLead = {
@@ -23,17 +23,15 @@ export function storeLeadInFile(payload: LeadPayload): { id: string; createdAt: 
     createdAt: new Date().toISOString(),
     sealed: seal(payload),
   }
-  const file = leadsFile()
-  mkdirSync(path.dirname(file), { recursive: true })
-  appendFileSync(file, `${JSON.stringify(record)}\n`, 'utf-8')
+  mkdirSync(path.dirname(LEADS_FILE), { recursive: true })
+  appendFileSync(LEADS_FILE, `${JSON.stringify(record)}\n`, 'utf-8')
   purgeExpiredLeads()
   return { id: record.id, createdAt: record.createdAt }
 }
 
 export function readLeadFromFile(id: string): LeadPayload | null {
-  const file = leadsFile()
-  if (!existsSync(file)) return null
-  for (const line of readFileSync(file, 'utf-8').split('\n')) {
+  if (!existsSync(LEADS_FILE)) return null
+  for (const line of readFileSync(LEADS_FILE, 'utf-8').split('\n')) {
     if (!line.trim()) continue
     const record = JSON.parse(line) as StoredLead
     if (record.id === id) return unseal(record.sealed)
@@ -43,15 +41,14 @@ export function readLeadFromFile(id: string): LeadPayload | null {
 
 /** POPIA retention: drop leads older than the configured window. */
 function purgeExpiredLeads(): void {
-  const file = leadsFile()
-  if (!existsSync(file)) return
+  if (!existsSync(LEADS_FILE)) return
   const cutoff = Date.now() - retentionMonths() * 30 * 24 * 60 * 60 * 1000
-  const kept = readFileSync(file, 'utf-8')
+  const kept = readFileSync(LEADS_FILE, 'utf-8')
     .split('\n')
     .filter((line) => {
       if (!line.trim()) return true
       const record = JSON.parse(line) as StoredLead
       return new Date(record.createdAt).getTime() >= cutoff
     })
-  writeFileSync(file, kept.join('\n'), 'utf-8')
+  writeFileSync(LEADS_FILE, kept.join('\n'), 'utf-8')
 }

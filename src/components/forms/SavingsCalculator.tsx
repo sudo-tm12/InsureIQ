@@ -60,21 +60,22 @@ interface ProviderComboboxProps {
 function ProviderCombobox({ inputId, value, selected, onSelect, onClearSelection }: ProviderComboboxProps) {
   const listId = useId()
   const [query, setQuery] = useState(value)
-  const [suggestions, setSuggestions] = useState<string[]>([])
+  const [lookup, setLookup] = useState<{ q: string; items: string[] } | null>(null)
   const [open, setOpen] = useState(false)
-  const [loading, setLoading] = useState(false)
   const [activeIndex, setActiveIndex] = useState(-1)
   const blurTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Derived from the keyed fetch result — no sync setState in effects
+  const trimmedQuery = query.trim()
+  const suggestions = lookup !== null && lookup.q === trimmedQuery ? lookup.items : []
+  const loading =
+    !selected && trimmedQuery.length >= 2 && (lookup === null || lookup.q !== trimmedQuery)
 
   useEffect(() => {
     if (selected) return
     const trimmed = query.trim()
-    if (trimmed.length < 2) {
-      setSuggestions([])
-      return
-    }
+    if (trimmed.length < 2) return
     const controller = new AbortController()
-    setLoading(true)
     const timer = setTimeout(async () => {
       try {
         const res = await fetch(`/api/quote/providers?q=${encodeURIComponent(trimmed)}`, {
@@ -82,12 +83,10 @@ function ProviderCombobox({ inputId, value, selected, onSelect, onClearSelection
         })
         if (!res.ok) throw new Error('lookup failed')
         const data = (await res.json()) as { providers: string[] }
-        setSuggestions(data.providers)
+        setLookup({ q: trimmed, items: data.providers })
         setActiveIndex(-1)
       } catch {
-        if (!controller.signal.aborted) setSuggestions([])
-      } finally {
-        if (!controller.signal.aborted) setLoading(false)
+        if (!controller.signal.aborted) setLookup({ q: trimmed, items: [] })
       }
     }, 250)
     return () => {
@@ -100,7 +99,7 @@ function ProviderCombobox({ inputId, value, selected, onSelect, onClearSelection
     onSelect(provider)
     setQuery(provider)
     setOpen(false)
-    setSuggestions([])
+    setLookup(null)
   }
 
   return (

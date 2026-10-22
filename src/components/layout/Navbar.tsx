@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils'
 
 export function Navbar() {
   const pathname = usePathname()
-  const [isOverDark, setIsOverDark] = useState(pathname === '/')
+  const [isHeroIntersecting, setIsHeroIntersecting] = useState(true)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [showTooltip, setShowTooltip] = useState(true)
   const hamburgerRef = useRef<HTMLButtonElement>(null)
@@ -19,21 +19,18 @@ export function Navbar() {
 
   useEffect(() => {
     const sentinel = document.getElementById('hero-sentinel')
-    if (!sentinel) {
-      setIsOverDark(false)
-      return
-    }
-
-    const rect = sentinel.getBoundingClientRect()
-    setIsOverDark(rect.bottom > 0)
+    if (!sentinel) return
 
     const observer = new IntersectionObserver(
-      ([entry]) => setIsOverDark(entry.isIntersecting),
+      ([entry]) => setIsHeroIntersecting(entry.isIntersecting),
       { threshold: 0 },
     )
     observer.observe(sentinel)
     return () => observer.disconnect()
   }, [pathname])
+
+  // The navbar sits over the dark hero only on the home page while the sentinel is in view
+  const isOverDark = pathname === '/' && isHeroIntersecting
 
   useEffect(() => {
     const timer = setTimeout(() => setShowTooltip(false), 3000)
