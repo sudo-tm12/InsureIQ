@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { motion, useReducedMotion } from 'framer-motion'
 import { CheckCircle2, LockKeyhole } from 'lucide-react'
 import { Container } from '@/components/ui/Container'
+import { LOAN_TYPES, quickQuoteSchema } from '@/lib/validations'
 import { cn } from '@/lib/utils'
 
 const HEADING = 'Ready to pay less for better cover?'
@@ -19,14 +20,6 @@ const TRUST_ITEMS = [
   'No commitment until you sign',
 ]
 
-const LOAN_TYPES = [
-  { value: '', label: 'Select loan type' },
-  { value: 'vehicle', label: 'Vehicle Finance' },
-  { value: 'home', label: 'Home Loan' },
-  { value: 'personal', label: 'Personal Loan' },
-  { value: 'business', label: 'Business Loan' },
-]
-
 interface FormState {
   name: string
   phone: string
@@ -34,7 +27,41 @@ interface FormState {
   consent: boolean
 }
 
+type Field = keyof FormState
+type FieldErrors = Partial<Record<Field, string>>
+
+interface FieldIssue {
+  path: string
+  message: string
+}
+
+const FIELDS: readonly Field[] = ['name', 'phone', 'loanType', 'consent']
+
+/** First message per field, from client (zod) or server (422) issues alike. */
+function toFieldErrors(issues: readonly FieldIssue[]): FieldErrors {
+  const errors: FieldErrors = {}
+  for (const issue of issues) {
+    const field = FIELDS.find((name) => name === issue.path)
+    if (field && !errors[field]) errors[field] = issue.message
+  }
+  return errors
+}
+
 type SubmitStatus = 'idle' | 'loading' | 'success' | 'error'
+
+interface FieldErrorProps {
+  id: string
+  message?: string
+}
+
+function FieldError({ id, message }: FieldErrorProps) {
+  if (!message) return null
+  return (
+    <p id={id} className="text-xs text-red-500 font-body mt-1">
+      {message}
+    </p>
+  )
+}
 
 const inputClass = cn(
   'w-full px-4 rounded-xl min-h-[52px]',
@@ -55,17 +82,44 @@ export function CTABanner() {
     consent: false,
   })
   const [status, setStatus] = useState<SubmitStatus>('idle')
+  const [errors, setErrors] = useState<FieldErrors>({})
+
+  function update<K extends Field>(field: K, value: FormState[K]) {
+    setForm((f) => ({ ...f, [field]: value }))
+    setErrors((prev) => ({ ...prev, [field]: undefined }))
+  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    if (!form.consent) return
+
+    // Client-side pre-check with the server's own schema.
+    const result = quickQuoteSchema.safeParse(form)
+    if (!result.success) {
+      setErrors(
+        toFieldErrors(
+          result.error.issues.map((issue) => ({ path: issue.path.join('.'), message: issue.message })),
+        ),
+      )
+      return
+    }
+
+    setErrors({})
     setStatus('loading')
     try {
       const res = await fetch('/api/leads', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, source: 'cta-banner' }),
+        body: JSON.stringify({ ...result.data, source: 'cta-banner' }),
       })
+      if (res.status === 422) {
+        const data = (await res.json()) as { issues?: FieldIssue[] }
+        const fieldErrors = toFieldErrors(data.issues ?? [])
+        if (Object.keys(fieldErrors).length > 0) {
+          setErrors(fieldErrors)
+          setStatus('idle')
+          return
+        }
+      }
       if (!res.ok) throw new Error('Submission failed')
       setStatus('success')
     } catch {
@@ -134,16 +188,18 @@ export function CTABanner() {
                     <input
                       id="cta-name"
                       type="text"
+                      autoComplete="name"
                       value={form.name}
-                      onChange={(e) =>
-                        setForm((f) => ({ ...f, name: e.target.value }))
-                      }
+                      onChange={(e) => update('name', e.target.value)}
                       placeholder="Jane Smith"
                       required
                       aria-required="true"
+                      aria-invalid={Boolean(errors.name)}
+                      aria-describedby={errors.name ? 'cta-name-error' : undefined}
                       disabled={status === 'loading'}
                       className={inputClass}
                     />
+                    <FieldError id="cta-name-error" message={errors.name} />
                   </div>
 
                   {/* Phone */}
@@ -157,16 +213,18 @@ export function CTABanner() {
                     <input
                       id="cta-phone"
                       type="tel"
+                      autoComplete="tel"
                       value={form.phone}
-                      onChange={(e) =>
-                        setForm((f) => ({ ...f, phone: e.target.value }))
-                      }
+                      onChange={(e) => update('phone', e.target.value)}
                       placeholder="072 000 0000"
                       required
                       aria-required="true"
+                      aria-invalid={Boolean(errors.phone)}
+                      aria-describedby={errors.phone ? 'cta-phone-error' : undefined}
                       disabled={status === 'loading'}
                       className={inputClass}
                     />
+                    <FieldError id="cta-phone-error" message={errors.phone} />
                   </div>
 
                   {/* Loan type */}
@@ -180,20 +238,24 @@ export function CTABanner() {
                     <select
                       id="cta-loan-type"
                       value={form.loanType}
-                      onChange={(e) =>
-                        setForm((f) => ({ ...f, loanType: e.target.value }))
-                      }
+                      onChange={(e) => update('loanType', e.target.value)}
                       required
                       aria-required="true"
+                      aria-invalid={Boolean(errors.loanType)}
+                      aria-describedby={errors.loanType ? 'cta-loan-type-error' : undefined}
                       disabled={status === 'loading'}
                       className={cn(inputClass, 'cursor-pointer')}
                     >
+                      <option value="" disabled>
+                        Select loan type
+                      </option>
                       {LOAN_TYPES.map(({ value, label }) => (
-                        <option key={value} value={value} disabled={value === ''}>
+                        <option key={value} value={value}>
                           {label}
                         </option>
                       ))}
                     </select>
+                    <FieldError id="cta-loan-type-error" message={errors.loanType} />
                   </div>
 
                   {/* POPIA consent */}
@@ -202,11 +264,11 @@ export function CTABanner() {
                       id="cta-consent"
                       type="checkbox"
                       checked={form.consent}
-                      onChange={(e) =>
-                        setForm((f) => ({ ...f, consent: e.target.checked }))
-                      }
+                      onChange={(e) => update('consent', e.target.checked)}
                       required
                       aria-required="true"
+                      aria-invalid={Boolean(errors.consent)}
+                      aria-describedby={errors.consent ? 'cta-consent-error' : undefined}
                       disabled={status === 'loading'}
                       className="mt-1 w-4 h-4 accent-brand-cyan flex-shrink-0"
                     />
@@ -225,6 +287,7 @@ export function CTABanner() {
                       and in compliance with POPIA.
                     </label>
                   </div>
+                  <FieldError id="cta-consent-error" message={errors.consent} />
                 </div>
 
                 {status === 'error' && (
@@ -239,7 +302,7 @@ export function CTABanner() {
 
                 <button
                   type="submit"
-                  disabled={!form.consent || status === 'loading'}
+                  disabled={status === 'loading'}
                   className={cn(
                     'w-full h-[52px] px-6 rounded-xl',
                     'bg-brand-navy text-white',

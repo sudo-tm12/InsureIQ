@@ -1,30 +1,36 @@
 import { NextResponse } from 'next/server'
-import { contactFormSchema, normalizeSaPhone, type ContactFormData } from '@/lib/validations'
+import { enquiryLeadSchema, normalizeSaPhone, type EnquiryLeadData } from '@/lib/validations'
 import { getClientIp, rateLimit } from '@/server/http/rate-limit'
 import { CONSENT_POLICY_VERSION, storeLead, type EnquiryLead } from '@/server/leads/store'
 import { sendEnquiryNotificationEmail } from '@/server/leads/notifications'
 
 export const runtime = 'nodejs'
 
-function toEnquiryLead(data: ContactFormData, consentAt: string): EnquiryLead {
-  return {
-    kind: 'enquiry',
-    source: 'contact-form',
-    name: `${data.firstName} ${data.lastName}`,
-    email: data.email,
+function toEnquiryLead(data: EnquiryLeadData, consentAt: string): EnquiryLead {
+  const shared = {
+    kind: 'enquiry' as const,
+    source: data.source,
     phone: normalizeSaPhone(data.phone) ?? data.phone,
     loanType: data.loanType,
-    loanAmount: data.loanAmount,
-    message: data.message?.trim() || null,
     consentAt,
     policyVersion: CONSENT_POLICY_VERSION,
   }
+  if (data.source === 'contact-form') {
+    return {
+      ...shared,
+      name: `${data.firstName} ${data.lastName}`,
+      email: data.email,
+      loanAmount: data.loanAmount,
+      message: data.message?.trim() || null,
+    }
+  }
+  return { ...shared, name: data.name, email: null, loanAmount: null, message: null }
 }
 
 /**
- * Enquiry capture for the contact form: validate (incl. POPIA consent),
- * store encrypted with the consent timestamp, and notify the leads inbox.
- * No PII is ever logged.
+ * Enquiry capture for the contact form and the CTA quick-quote banner:
+ * validate (incl. POPIA consent), store encrypted with the consent timestamp,
+ * and notify the leads inbox. No PII is ever logged.
  */
 export async function POST(request: Request): Promise<NextResponse> {
   const limit = rateLimit(`leads:${getClientIp(request)}`, 5, 60 * 60_000)
@@ -42,7 +48,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     return NextResponse.json({ error: 'Invalid request body.' }, { status: 400 })
   }
 
-  const parsed = contactFormSchema.safeParse(body)
+  const parsed = enquiryLeadSchema.safeParse(body)
   if (!parsed.success) {
     return NextResponse.json(
       {

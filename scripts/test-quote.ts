@@ -18,6 +18,7 @@ import {
   monthlyPremiumCents,
 } from '../src/lib/quote/savings'
 import {
+  enquiryLeadSchema,
   isValidSaIdNumber,
   maskIdNumber,
   normalizeSaPhone,
@@ -202,6 +203,49 @@ const sampleQuote = calculateSavings(
   [{ provider: 'Example Credit Card', accountNumber: INJECTION, balance: 100_000, creditType: 'credit-card' }],
   [{ provider: 'Example Credit Card', rateHundredths: 340 }],
 )
+
+test('CTA banner payload is accepted by /api/leads (was always rejected)', () => {
+  // Exactly the body CTABanner posts.
+  const banner = enquiryLeadSchema.safeParse({
+    name: 'Jane Smith',
+    phone: '072 000 0000',
+    loanType: 'vehicle',
+    consent: true,
+    source: 'cta-banner',
+  })
+  assert.ok(banner.success, JSON.stringify(!banner.success && banner.error.issues))
+
+  const contact = enquiryLeadSchema.safeParse({
+    firstName: 'Jane',
+    lastName: 'Smith',
+    email: 'jane@example.com',
+    phone: '+27 72 000 0000',
+    loanType: 'home',
+    loanAmount: '150k-500k',
+    message: '',
+    consent: true,
+    source: 'contact-form',
+  })
+  assert.ok(contact.success, JSON.stringify(!contact.success && contact.error.issues))
+
+  const noConsent = enquiryLeadSchema.safeParse({
+    name: 'Jane Smith',
+    phone: '072 000 0000',
+    loanType: 'vehicle',
+    consent: false,
+    source: 'cta-banner',
+  })
+  assert.ok(!noConsent.success, 'consent is mandatory')
+
+  const badPhone = enquiryLeadSchema.safeParse({
+    name: 'Jane Smith',
+    phone: 'abcdefghij',
+    loanType: 'vehicle',
+    consent: true,
+    source: 'cta-banner',
+  })
+  assert.ok(!badPhone.success, 'phone must be a real SA number')
+})
 
 test('lead emails HTML-escape visitor input', async () => {
   const realFetch = globalThis.fetch

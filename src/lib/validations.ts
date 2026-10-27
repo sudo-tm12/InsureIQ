@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { CREDIT_TYPE_VALUES } from '@/lib/quote/savings'
 
 /* ────────────────────────────────────────────────────────────────────────
- * Enquiry forms — contact form.
+ * Enquiry forms — contact form and CTA quick-quote banner.
  * The same schemas run client-side (UX) and server-side (authoritative).
  * ──────────────────────────────────────────────────────────────────────── */
 
@@ -43,6 +43,24 @@ export const contactFormSchema = z.object({
 })
 
 export type ContactFormData = z.infer<typeof contactFormSchema>
+
+/** CTA banner — a deliberately short form: name, phone, loan type, consent. */
+export const quickQuoteSchema = z.object({
+  name: z.string().trim().min(2, 'Please enter your full name').max(100),
+  phone: saPhoneField,
+  loanType: loanTypeField,
+  consent: consentField,
+})
+
+export type QuickQuoteData = z.infer<typeof quickQuoteSchema>
+
+/** POST /api/leads — one endpoint, discriminated by the submitting form. */
+export const enquiryLeadSchema = z.discriminatedUnion('source', [
+  contactFormSchema.extend({ source: z.literal('contact-form') }),
+  quickQuoteSchema.extend({ source: z.literal('cta-banner') }),
+])
+
+export type EnquiryLeadData = z.infer<typeof enquiryLeadSchema>
 
 /* ────────────────────────────────────────────────────────────────────────
  * SA ID number — 13 digits, valid YYMMDD date, Luhn check digit.

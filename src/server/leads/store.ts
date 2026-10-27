@@ -36,17 +36,17 @@ export interface QuoteLead extends ConsentEvidence {
   quote: QuoteResult
 }
 
-export type EnquirySource = 'contact-form'
+export type EnquirySource = 'contact-form' | 'cta-banner'
 
-/** Contact form enquiry. */
+/** Contact form or CTA banner enquiry. The banner collects no email or amount. */
 export interface EnquiryLead extends ConsentEvidence {
   kind: 'enquiry'
   source: EnquirySource
   name: string
-  email: string
+  email: string | null
   phone: string
   loanType: LoanType
-  loanAmount: string
+  loanAmount: string | null
   message: string | null
 }
 

@@ -10,6 +10,7 @@ import type { EnquiryLead, EnquirySource } from './store'
 
 const SOURCE_LABELS: Record<EnquirySource, string> = {
   'contact-form': 'Contact form',
+  'cta-banner': 'Quick quote banner',
 }
 
 function detailRows(rows: Array<[label: string, value: string | null]>): string {
