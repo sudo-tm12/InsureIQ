@@ -100,6 +100,7 @@ export default function FinancialAdvisoryPage() {
           value: 'FAIS',
           label: 'licensed advice — legally required to act in your best interest',
         },
+        cta: { label: 'Get a Free Quote', href: '/contact' },
       }}
     >
 

@@ -13,6 +13,8 @@ interface ProductHero {
   icon: LucideIcon
   stat: { value: string; label: string }
   badge?: string
+  /** Primary hero action — products differ (calculator vs. adviser contact). */
+  cta: { label: string; href: string }
 }
 
 interface ProductLayoutProps {
@@ -114,8 +116,8 @@ export function ProductLayout({ hero, children }: ProductLayoutProps) {
                   className="bg-white text-brand-navy hover:bg-brand-cyan hover:text-white hover:shadow-none font-bold inline-flex items-center gap-2"
                   asChild
                 >
-                  <Link href="/contact">
-                    Get a Free Quote
+                  <Link href={hero.cta.href}>
+                    {hero.cta.label}
                     <ArrowRight className="w-4 h-4" aria-hidden="true" />
                   </Link>
                 </Button>

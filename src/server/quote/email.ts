@@ -1,19 +1,15 @@
 /**
- * Resend transactional email (server-only). REST via fetch — no SDK needed.
+ * Quote emails (server-only), sent through Resend.
  * POPIA: the leads-inbox notification carries the MASKED id number only;
  * the full record sits behind a signed, expiring link.
+ * Every interpolated value is HTML-escaped — names and account numbers are
+ * free text typed by the visitor.
  */
 import { maskIdNumber } from '@/lib/validations'
-import { formatCents } from '@/lib/utils'
+import { escapeHtml, formatCents } from '@/lib/utils'
 import type { QuoteResult } from '@/lib/quote/savings'
 import { creditTypeLabel } from '@/lib/quote/savings'
-
-const RESEND_URL = 'https://api.resend.com/emails'
-
-export interface EmailResult {
-  sent: boolean
-  reason?: string
-}
+import { leadsInbox, sendEmail, type EmailResult } from '@/server/email/resend'
 
 export interface ClientQuoteEmailInput {
   to: string
@@ -35,42 +31,14 @@ export interface LeadNotificationEmailInput {
   recordUrl: string
 }
 
-function fromAddress(): string {
-  return process.env.RESEND_FROM ?? 'InsurIQ <quotes@insuriq.co.za>'
-}
-
-async function send(message: Record<string, unknown>): Promise<EmailResult> {
-  const apiKey = process.env.RESEND_API_KEY?.trim()
-  if (!apiKey) return { sent: false, reason: 'RESEND_API_KEY not configured' }
-  try {
-    const response = await fetch(RESEND_URL, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(message),
-    })
-    if (!response.ok) {
-      // Log status only — never PII or provider payloads.
-      console.error(`Resend error: ${response.status}`)
-      return { sent: false, reason: `Resend responded ${response.status}` }
-    }
-    return { sent: true }
-  } catch {
-    console.error('Resend request failed')
-    return { sent: false, reason: 'Resend request failed' }
-  }
-}
-
 function quoteTableRows(quote: QuoteResult): string {
   return quote.rows
     .map(
       (row) => `
         <tr>
-          <td style="padding:6px 10px;border-bottom:1px solid #e8edf5;">${row.provider}</td>
-          <td style="padding:6px 10px;border-bottom:1px solid #e8edf5;">${creditTypeLabel(row.creditType)}</td>
-          <td style="padding:6px 10px;border-bottom:1px solid #e8edf5;">${row.accountNumber ?? '—'}</td>
+          <td style="padding:6px 10px;border-bottom:1px solid #e8edf5;">${escapeHtml(row.provider)}</td>
+          <td style="padding:6px 10px;border-bottom:1px solid #e8edf5;">${escapeHtml(creditTypeLabel(row.creditType))}</td>
+          <td style="padding:6px 10px;border-bottom:1px solid #e8edf5;">${escapeHtml(row.accountNumber ?? '—')}</td>
           <td style="padding:6px 10px;border-bottom:1px solid #e8edf5;text-align:right;">${formatCents(row.balanceCents)}</td>
           <td style="padding:6px 10px;border-bottom:1px solid #e8edf5;text-align:right;">${formatCents(row.currentMonthlyCents)}</td>
           <td style="padding:6px 10px;border-bottom:1px solid #e8edf5;text-align:right;">${formatCents(row.newMonthlyCents)}</td>
@@ -117,10 +85,13 @@ const FOOTER = `
     <a href="https://www.insuriq.co.za/privacy-policy" style="color:#1A5FBF;">Privacy Policy</a>.
   </p>`
 
+function yearsLabel(years: number): string {
+  return years === 1 ? 'year' : 'years'
+}
+
 export async function sendClientQuoteEmail(input: ClientQuoteEmailInput): Promise<EmailResult> {
   const { quote } = input
-  return send({
-    from: fromAddress(),
+  return sendEmail({
     to: input.to,
     subject: 'Your personal InsurIQ savings quote',
     html: `
@@ -130,14 +101,14 @@ export async function sendClientQuoteEmail(input: ClientQuoteEmailInput): Promis
       </div>
       <div style="padding:28px;font-family:Arial,sans-serif;color:#1c2b4a;">
         <h1 style="font-size:20px;margin:0 0 6px;">Your savings quote is ready</h1>
-        <p style="font-size:13px;color:#5a6b85;margin:0 0 20px;">Quote date: ${input.quoteDate} · Prepared for ${input.firstName} ${input.lastName}</p>
+        <p style="font-size:13px;color:#5a6b85;margin:0 0 20px;">Quote date: ${escapeHtml(input.quoteDate)} · Prepared for ${escapeHtml(`${input.firstName} ${input.lastName}`)}</p>
         <table cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
           <tr>
             <td style="background:#f2f6fc;padding:14px 18px;">
               <div style="font-size:11px;color:#5a6b85;">You could save</div>
               <div style="font-size:26px;font-weight:bold;color:#0B2D78;">${formatCents(quote.summary.savingMonthlyCents)} <span style="font-size:13px;font-weight:normal;">per month</span></div>
               <div style="font-size:12px;color:#5a6b85;">${formatCents(quote.summary.savingAnnualCents)} a year</div>
-              <div style="font-size:12px;color:#5a6b85;">Roughly ${formatCents(quote.summary.termSavingCents)} over the next ${quote.summary.yearsRemaining} ${quote.summary.yearsRemaining === 1 ? 'year' : 'years'}</div>
+              <div style="font-size:12px;color:#5a6b85;">Roughly ${formatCents(quote.summary.termSavingCents)} over the next ${quote.summary.yearsRemaining} ${yearsLabel(quote.summary.yearsRemaining)}</div>
             </td>
           </tr>
         </table>
@@ -158,25 +129,24 @@ export async function sendLeadNotificationEmail(
   input: LeadNotificationEmailInput,
 ): Promise<EmailResult> {
   const { quote } = input
-  return send({
-    from: fromAddress(),
-    to: process.env.LEADS_NOTIFICATION_EMAIL ?? 'leads@insuriq.co.za',
+  return sendEmail({
+    to: leadsInbox(),
     subject: `New quote lead: ${input.firstName} ${input.lastName} — saves ${formatCents(quote.summary.savingMonthlyCents)}/month`,
     html: `
       <div style="padding:24px;font-family:Arial,sans-serif;color:#1c2b4a;">
         <h1 style="font-size:18px;margin:0 0 16px;">New savings quote lead</h1>
         <table cellpadding="0" cellspacing="0" style="font-size:13px;border-collapse:collapse;">
-          <tr><td style="padding:4px 16px 4px 0;color:#5a6b85;">Name</td><td style="padding:4px 0;font-weight:bold;">${input.firstName} ${input.lastName}</td></tr>
-          <tr><td style="padding:4px 16px 4px 0;color:#5a6b85;">ID number</td><td style="padding:4px 0;font-weight:bold;">${maskIdNumber(input.idNumber)}</td></tr>
-          <tr><td style="padding:4px 16px 4px 0;color:#5a6b85;">Email</td><td style="padding:4px 0;">${input.email}</td></tr>
-          <tr><td style="padding:4px 16px 4px 0;color:#5a6b85;">Cell</td><td style="padding:4px 0;">${input.phone}</td></tr>
-          <tr><td style="padding:4px 16px 4px 0;color:#5a6b85;">Consent recorded</td><td style="padding:4px 0;">${input.consentAt}</td></tr>
-          <tr><td style="padding:4px 16px 4px 0;color:#5a6b85;">Savings</td><td style="padding:4px 0;font-weight:bold;color:#0B2D78;">${formatCents(quote.summary.savingMonthlyCents)}/month · ${formatCents(quote.summary.savingAnnualCents)}/year · ${formatCents(quote.summary.termSavingCents)} over ${quote.summary.yearsRemaining} ${quote.summary.yearsRemaining === 1 ? 'year' : 'years'}</td></tr>
+          <tr><td style="padding:4px 16px 4px 0;color:#5a6b85;">Name</td><td style="padding:4px 0;font-weight:bold;">${escapeHtml(`${input.firstName} ${input.lastName}`)}</td></tr>
+          <tr><td style="padding:4px 16px 4px 0;color:#5a6b85;">ID number</td><td style="padding:4px 0;font-weight:bold;">${escapeHtml(maskIdNumber(input.idNumber))}</td></tr>
+          <tr><td style="padding:4px 16px 4px 0;color:#5a6b85;">Email</td><td style="padding:4px 0;">${escapeHtml(input.email)}</td></tr>
+          <tr><td style="padding:4px 16px 4px 0;color:#5a6b85;">Cell</td><td style="padding:4px 0;">${escapeHtml(input.phone)}</td></tr>
+          <tr><td style="padding:4px 16px 4px 0;color:#5a6b85;">Consent recorded</td><td style="padding:4px 0;">${escapeHtml(input.consentAt)}</td></tr>
+          <tr><td style="padding:4px 16px 4px 0;color:#5a6b85;">Savings</td><td style="padding:4px 0;font-weight:bold;color:#0B2D78;">${formatCents(quote.summary.savingMonthlyCents)}/month · ${formatCents(quote.summary.savingAnnualCents)}/year · ${formatCents(quote.summary.termSavingCents)} over ${quote.summary.yearsRemaining} ${yearsLabel(quote.summary.yearsRemaining)}</td></tr>
         </table>
         <h2 style="font-size:14px;margin:22px 0 8px;">Accounts</h2>
         ${quoteTable(quote)}
         <p style="font-size:12px;margin-top:22px;">
-          <a href="${input.recordUrl}" style="background:#0B2D78;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:bold;">View full lead record</a>
+          <a href="${escapeHtml(input.recordUrl)}" style="background:#0B2D78;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:bold;">View full lead record</a>
         </p>
         <p style="font-size:11px;color:#7a8699;">The record link shows the full ID number and expires in 24 hours. Access is granted for POPIA-compliant follow-up only.</p>
       </div>`,
