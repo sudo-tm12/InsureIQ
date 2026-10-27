@@ -84,7 +84,10 @@ export async function generateQuotePdf(input: QuotePdfInput): Promise<Uint8Array
   /* ── Header band ── */
   page.drawRectangle({ x: 0, y: PAGE_H - 96, width: PAGE_W, height: 96, color: INDIGO })
   try {
-    const logo = readFileSync(path.join(process.cwd(), 'public', 'logo', 'insuriq-logo-reverse.png'))
+    // Compact lockup: the master's baked strapline would print ~3pt tall here.
+    const logo = readFileSync(
+      path.join(process.cwd(), 'public', 'images', 'logo', 'insuriq-logo-compact-reverse.png'),
+    )
     const image = await doc.embedPng(logo)
     const height = 34
     const width = (image.width / image.height) * height

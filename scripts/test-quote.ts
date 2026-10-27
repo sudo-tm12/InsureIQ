@@ -25,6 +25,7 @@ import {
   normalizeSaPhone,
 } from '../src/lib/validations'
 import { findRateHundredths, searchProviders } from '../src/server/ratebook'
+import { generateQuotePdf } from '../src/server/quote/pdf'
 import { sendLeadNotificationEmail } from '../src/server/quote/email'
 import { sendEnquiryNotificationEmail } from '../src/server/leads/notifications'
 import { seal, unseal, type LeadPayload } from '../src/server/leads/store'
@@ -252,6 +253,17 @@ test('newsletter sign-up requires a valid email and POPIA consent', () => {
   assert.ok(newsletterSchema.safeParse({ email: 'jane@example.com', consent: true }).success)
   assert.ok(!newsletterSchema.safeParse({ email: 'jane@example.com', consent: false }).success)
   assert.ok(!newsletterSchema.safeParse({ email: 'not-an-email', consent: true }).success)
+})
+
+test('PDF quote embeds the logo image (was silently falling back to text)', async () => {
+  const pdf = await generateQuotePdf({
+    firstName: 'Jane',
+    lastName: 'Smith',
+    idNumber: '8001015009087',
+    quoteDate: '27 October 2026',
+    quote: sampleQuote,
+  })
+  assert.ok(Buffer.from(pdf).toString('latin1').includes('/Subtype /Image'), 'no image XObject in PDF')
 })
 
 test('lead emails HTML-escape visitor input', async () => {
