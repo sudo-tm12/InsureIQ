@@ -1,10 +1,11 @@
 /**
- * Quote engine tests — run with: npm run test:quote
+ * Quote engine and lead capture tests — run with: npm run test:quote
  *
  * Includes the acceptance test from QUOTE-CALCULATOR-SPEC.md §3.1: the
  * worked example must reconcile to the cent, and the real encrypted rate book
  * must decrypt end-to-end (key → decrypt → lookup → maths). No real
  * provider rate appears in this public repo — example rates are illustrative.
+ * Email tests stub fetch — nothing is ever sent to Resend.
  */
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
@@ -16,8 +17,19 @@ import {
   insurIqRateForType,
   monthlyPremiumCents,
 } from '../src/lib/quote/savings'
-import { isValidSaIdNumber, maskIdNumber, normalizeSaPhone } from '../src/lib/validations'
+import {
+  enquiryLeadSchema,
+  isValidSaIdNumber,
+  maskIdNumber,
+  newsletterSchema,
+  normalizeSaPhone,
+} from '../src/lib/validations'
 import { findRateHundredths, searchProviders } from '../src/server/ratebook'
+import { formatCents } from '../src/lib/utils'
+import { generateQuotePdf } from '../src/server/quote/pdf'
+import { sendLeadNotificationEmail } from '../src/server/quote/email'
+import { sendEnquiryNotificationEmail } from '../src/server/leads/notifications'
+import { seal, unseal, type LeadPayload } from '../src/server/leads/store'
 
 // Load .env.local so the rate-book key is available (dev convenience only).
 try {
@@ -184,4 +196,154 @@ test('SA phone normalisation', () => {
   assert.equal(normalizeSaPhone('+27821234567'), '27821234567')
   assert.equal(normalizeSaPhone('0821234567'), '27821234567')
   assert.equal(normalizeSaPhone('12345'), null)
+})
+
+test('money prints as "R 1 234.50" (spec §3) whatever the runtime locale', () => {
+  const nb = ' '
+  assert.equal(formatCents(123450), `R${nb}1${nb}234.50`)
+  assert.equal(formatCents(34000), `R${nb}340.00`)
+  assert.equal(formatCents(5), `R${nb}0.05`)
+  assert.equal(formatCents(0), `R${nb}0.00`)
+  assert.equal(formatCents(1_000_000_000), `R${nb}10${nb}000${nb}000.00`)
+})
+
+/* ── Lead capture ──────────────────────────────────────────────────────── */
+
+const INJECTION = '<img src=x onerror=alert(1)><script>alert(1)</script>'
+
+const sampleQuote = calculateSavings(
+  [{ provider: 'Example Credit Card', accountNumber: INJECTION, balance: 100_000, creditType: 'credit-card' }],
+  [{ provider: 'Example Credit Card', rateHundredths: 340 }],
+)
+
+test('CTA banner payload is accepted by /api/leads (was always rejected)', () => {
+  // Exactly the body CTABanner posts.
+  const banner = enquiryLeadSchema.safeParse({
+    name: 'Jane Smith',
+    phone: '072 000 0000',
+    loanType: 'vehicle',
+    consent: true,
+    source: 'cta-banner',
+  })
+  assert.ok(banner.success, JSON.stringify(!banner.success && banner.error.issues))
+
+  const contact = enquiryLeadSchema.safeParse({
+    firstName: 'Jane',
+    lastName: 'Smith',
+    email: 'jane@example.com',
+    phone: '+27 72 000 0000',
+    loanType: 'home',
+    loanAmount: '150k-500k',
+    message: '',
+    consent: true,
+    source: 'contact-form',
+  })
+  assert.ok(contact.success, JSON.stringify(!contact.success && contact.error.issues))
+
+  const noConsent = enquiryLeadSchema.safeParse({
+    name: 'Jane Smith',
+    phone: '072 000 0000',
+    loanType: 'vehicle',
+    consent: false,
+    source: 'cta-banner',
+  })
+  assert.ok(!noConsent.success, 'consent is mandatory')
+
+  const badPhone = enquiryLeadSchema.safeParse({
+    name: 'Jane Smith',
+    phone: 'abcdefghij',
+    loanType: 'vehicle',
+    consent: true,
+    source: 'cta-banner',
+  })
+  assert.ok(!badPhone.success, 'phone must be a real SA number')
+})
+
+test('newsletter sign-up requires a valid email and POPIA consent', () => {
+  assert.ok(newsletterSchema.safeParse({ email: 'jane@example.com', consent: true }).success)
+  assert.ok(!newsletterSchema.safeParse({ email: 'jane@example.com', consent: false }).success)
+  assert.ok(!newsletterSchema.safeParse({ email: 'not-an-email', consent: true }).success)
+})
+
+test('PDF quote embeds the logo image (was silently falling back to text)', async () => {
+  const pdf = await generateQuotePdf({
+    firstName: 'Jane',
+    lastName: 'Smith',
+    idNumber: '8001015009087',
+    quoteDate: '27 October 2026',
+    quote: sampleQuote,
+  })
+  assert.ok(Buffer.from(pdf).toString('latin1').includes('/Subtype /Image'), 'no image XObject in PDF')
+})
+
+test('lead emails HTML-escape visitor input', async () => {
+  const realFetch = globalThis.fetch
+  const realKey = process.env.RESEND_API_KEY
+  const bodies: Array<{ html: string }> = []
+  process.env.RESEND_API_KEY = 'test-key'
+  globalThis.fetch = (async (_input: string | URL | Request, init?: RequestInit) => {
+    bodies.push(JSON.parse(String(init?.body)) as { html: string })
+    return new Response('{}', { status: 200 })
+  }) as typeof fetch
+
+  try {
+    await sendLeadNotificationEmail({
+      firstName: INJECTION,
+      lastName: 'Smith',
+      idNumber: '8001015009087',
+      email: 'jane@example.com',
+      phone: '27720000000',
+      consentAt: '2026-10-27T00:00:00.000Z',
+      quote: sampleQuote,
+      recordUrl: 'https://example.com/api/quote/lead-record?token=a.b.c',
+    })
+    await sendEnquiryNotificationEmail({
+      kind: 'enquiry',
+      source: 'contact-form',
+      name: INJECTION,
+      email: 'jane@example.com',
+      phone: '27720000000',
+      loanType: 'vehicle',
+      loanAmount: 'under-50k',
+      message: INJECTION,
+      consentAt: '2026-10-27T00:00:00.000Z',
+      policyVersion: 'privacy-policy-2026-01',
+    })
+  } finally {
+    globalThis.fetch = realFetch
+    if (realKey === undefined) delete process.env.RESEND_API_KEY
+    else process.env.RESEND_API_KEY = realKey
+  }
+
+  assert.equal(bodies.length, 2)
+  for (const { html } of bodies) {
+    assert.ok(!html.includes('<script>'), 'raw <script> reached the email')
+    assert.ok(!html.includes('<img'), 'raw <img> reached the email')
+    assert.ok(html.includes('&lt;script&gt;'), 'input should appear escaped')
+  }
+})
+
+test('lead store: records sealed before `kind` existed read back as quote leads', () => {
+  const legacy = {
+    firstName: 'Jane',
+    lastName: 'Smith',
+    idNumber: '8001015009087',
+    email: 'jane@example.com',
+    phone: '27720000000',
+    consentAt: '2026-10-19T00:00:00.000Z',
+    policyVersion: 'privacy-policy-2026-01',
+    quote: sampleQuote,
+  }
+  const restored = unseal(seal(legacy as unknown as LeadPayload))
+  assert.equal(restored.kind, 'quote')
+
+  const newsletter = unseal(
+    seal({
+      kind: 'newsletter',
+      email: 'jane@example.com',
+      consentAt: '2026-10-27T00:00:00.000Z',
+      policyVersion: 'privacy-policy-2026-01',
+    }),
+  )
+  assert.equal(newsletter.kind, 'newsletter')
 })

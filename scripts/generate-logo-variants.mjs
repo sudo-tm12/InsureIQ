@@ -1,21 +1,21 @@
-'use strict'
 /**
  * Regenerates every derived InsurIQ logo variant from the master asset.
  *
- *   node scripts/generate-logo-variants.js
+ *   node scripts/generate-logo-variants.mjs
  *
  * Run this whenever public/images/logo/insuriq-logo.png changes. The master is
  * only ever read; this writes the variants beside it.
  *
  * Bundles a minimal 8-bit PNG codec so the repo needs no image dependency.
  */
-const fs = require('fs')
-const path = require('path')
+import fs from 'node:fs'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+import zlib from 'node:zlib'
 
-const ROOT = path.join(__dirname, '..')
+const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
 
 /* ------------------------------------------------------------ PNG codec */
-const zlib = require('zlib')
 
 const SIG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
 
@@ -153,7 +153,6 @@ function encode({ width, height, channels, data }) {
 //                                      >= 3:1 against the #071840 dark surfaces
 
 const SRC = path.join(ROOT, 'public/images/logo/insuriq-logo.png')
-const OUT = path.join(ROOT, 'public/images/logo/insuriq-logo-reverse.png')
 
 const SPLIT = 406             // empty gutter runs x354-456; split inside it
 const MIN_CONTRAST = 3.05     // WCAG 1.4.11 non-text contrast, small safety margin

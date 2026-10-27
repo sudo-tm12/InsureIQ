@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server'
 import { verifyLeadRecordToken } from '@/server/leads/token'
-import { readLead, type LeadPayload } from '@/server/leads/store'
+import { readLead, type QuoteLead } from '@/server/leads/store'
 import { maskIdNumber } from '@/lib/validations'
-import type { CreditType } from '@/lib/quote/savings'
 import { creditTypeLabel } from '@/lib/quote/savings'
+import { escapeHtml, formatCents } from '@/lib/utils'
 
 export const runtime = 'nodejs'
 
@@ -22,8 +22,9 @@ export async function GET(request: Request): Promise<NextResponse> {
     })
   }
 
+  // Record links are only ever issued for savings-quote leads.
   const lead = await readLead(leadId)
-  if (!lead) {
+  if (!lead || lead.kind !== 'quote') {
     return new NextResponse(html('Lead not found', 'No lead exists for this link.'), {
       status: 404,
       headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' },
@@ -35,45 +36,17 @@ export async function GET(request: Request): Promise<NextResponse> {
   })
 }
 
-function escapeHtml(value: string): string {
-  return value.replace(/[&<>"']/g, (ch) => {
-    switch (ch) {
-      case '&':
-        return '&amp;'
-      case '<':
-        return '&lt;'
-      case '>':
-        return '&gt;'
-      case '"':
-        return '&quot;'
-      default:
-        return '&#39;'
-    }
-  })
-}
-
-function leadBody(lead: LeadPayload): string {
-  const quote = lead.quote as {
-    rows: Array<{
-      provider: string
-      accountNumber: string | null
-      creditType: CreditType
-      balanceCents: number
-      currentMonthlyCents: number
-      newMonthlyCents: number
-      savingMonthlyCents: number
-    }>
-  }
-  const rows = quote.rows
+function leadBody(lead: QuoteLead): string {
+  const rows = lead.quote.rows
     .map(
       (row) => `<tr>
         <td>${escapeHtml(row.provider)}</td>
         <td>${escapeHtml(creditTypeLabel(row.creditType))}</td>
         <td>${escapeHtml(row.accountNumber ?? '—')}</td>
-        <td class="n">${cents(row.balanceCents)}</td>
-        <td class="n">${cents(row.currentMonthlyCents)}</td>
-        <td class="n">${cents(row.newMonthlyCents)}</td>
-        <td class="n">${cents(row.savingMonthlyCents)}</td>
+        <td class="n">${formatCents(row.balanceCents)}</td>
+        <td class="n">${formatCents(row.currentMonthlyCents)}</td>
+        <td class="n">${formatCents(row.newMonthlyCents)}</td>
+        <td class="n">${formatCents(row.savingMonthlyCents)}</td>
       </tr>`,
     )
     .join('')
@@ -91,10 +64,6 @@ function leadBody(lead: LeadPayload): string {
       <tbody>${rows}</tbody>
     </table>
     <p class="muted">POPIA: view this record for follow-up purposes only. Do not share or export the ID number.</p>`
-}
-
-function cents(value: number): string {
-  return `R ${(value / 100).toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
 
 function html(title: string, body: string): string {

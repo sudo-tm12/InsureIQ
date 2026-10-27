@@ -32,7 +32,7 @@ const CATEGORY_TAGS: Record<string, string> = {
 }
 
 interface ArticlePageProps {
-  params: { slug: string }
+  params: Promise<{ slug: string }>
 }
 
 /** Normalise a SanityPost to the BlogPost shape BlogCard expects. */
@@ -65,10 +65,11 @@ export async function generateStaticParams(): Promise<Array<{ slug: string }>> {
 }
 
 export async function generateMetadata({ params }: ArticlePageProps): Promise<Metadata> {
+  const { slug } = await params
   if (isSanityConfigured) {
     try {
       const post = await sanityClient.fetch<SanityPost | null>(POST_BY_SLUG_QUERY, {
-        slug: params.slug,
+        slug,
       })
       if (post) {
         return {
@@ -80,23 +81,24 @@ export async function generateMetadata({ params }: ArticlePageProps): Promise<Me
       // Fall through to mock metadata
     }
   }
-  const mock = getPostBySlug(params.slug)
+  const mock = getPostBySlug(slug)
   if (!mock) return { title: 'Article Not Found | InsurIQ' }
   return { title: `${mock.title} | InsurIQ`, description: mock.excerpt }
 }
 
 export default async function ArticlePage({ params }: ArticlePageProps) {
+  const { slug } = await params
   let sanityPost: SanityPost | null = null
   let relatedSanity: SanityPost[] = []
 
   if (isSanityConfigured) {
     try {
       sanityPost = await sanityClient.fetch<SanityPost | null>(POST_BY_SLUG_QUERY, {
-        slug: params.slug,
+        slug,
       })
       if (sanityPost) {
         relatedSanity = await sanityClient.fetch<SanityPost[]>(RELATED_POSTS_QUERY, {
-          slug: params.slug,
+          slug,
           category: sanityPost.category,
         })
       }
@@ -133,7 +135,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
     seo = sanityPost.seo
     relatedCards = relatedSanity.map(sanityToCard)
   } else {
-    const mock = getPostBySlug(params.slug)
+    const mock = getPostBySlug(slug)
     if (!mock) notFound()
     title = mock.title
     category = mock.category

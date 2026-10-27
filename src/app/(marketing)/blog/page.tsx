@@ -54,11 +54,12 @@ function sanityToCard(post: SanityPost): BlogPost {
 }
 
 interface BlogPageProps {
-  searchParams: { category?: string }
+  searchParams: Promise<{ category?: string }>
 }
 
 export default async function BlogPage({ searchParams }: BlogPageProps) {
-  const activeCategory = searchParams.category ?? 'all'
+  const categoryParam = (await searchParams).category
+  const activeCategory = categoryParam ?? 'all'
 
   let allPosts: BlogPost[] = []
   let featuredPost: BlogPost | null = null
@@ -199,7 +200,7 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
           <div className="flex gap-2 flex-wrap mb-8" role="navigation" aria-label="Filter by category">
             {CATEGORY_FILTERS.map(({ label, value }) => {
               const isActive =
-                value === activeCategory || (value === 'all' && !searchParams.category)
+                value === activeCategory || (value === 'all' && !categoryParam)
               return (
                 <Link
                   key={value}

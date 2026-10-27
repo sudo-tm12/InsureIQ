@@ -73,6 +73,23 @@ function fit(
   return `${trimmed}…`
 }
 
+/** Greedy word-wrap to a maximum line width. */
+function wrap(text: string, font: PDFFont, size: number, maxWidth: number): string[] {
+  const lines: string[] = []
+  let line = ''
+  for (const word of text.split(/\s+/)) {
+    const candidate = line ? `${line} ${word}` : word
+    if (line && font.widthOfTextAtSize(candidate, size) > maxWidth) {
+      lines.push(line)
+      line = word
+    } else {
+      line = candidate
+    }
+  }
+  if (line) lines.push(line)
+  return lines
+}
+
 export async function generateQuotePdf(input: QuotePdfInput): Promise<Uint8Array> {
   const doc = await PDFDocument.create()
   doc.setTitle(`InsurIQ savings quote — ${input.firstName} ${input.lastName}`)
@@ -84,7 +101,10 @@ export async function generateQuotePdf(input: QuotePdfInput): Promise<Uint8Array
   /* ── Header band ── */
   page.drawRectangle({ x: 0, y: PAGE_H - 96, width: PAGE_W, height: 96, color: INDIGO })
   try {
-    const logo = readFileSync(path.join(process.cwd(), 'public', 'logo', 'insuriq-logo-reverse.png'))
+    // Compact lockup: the master's baked strapline would print ~3pt tall here.
+    const logo = readFileSync(
+      path.join(process.cwd(), 'public', 'images', 'logo', 'insuriq-logo-compact-reverse.png'),
+    )
     const image = await doc.embedPng(logo)
     const height = 34
     const width = (image.width / image.height) * height
@@ -149,7 +169,7 @@ export async function generateQuotePdf(input: QuotePdfInput): Promise<Uint8Array
     const cells: string[] = [
       fit(row.provider, regular, 8.5, COLUMNS[0].width - 12),
       fit(creditTypeLabel(row.creditType), regular, 8.5, COLUMNS[1].width - 12),
-      row.accountNumber ?? '—',
+      fit(row.accountNumber ?? '—', regular, 8.5, COLUMNS[2].width - 12),
       formatCents(row.balanceCents),
       formatCents(row.currentMonthlyCents),
       formatCents(row.newMonthlyCents),
@@ -209,12 +229,13 @@ export async function generateQuotePdf(input: QuotePdfInput): Promise<Uint8Array
     bold,
     MUTED,
   )
-  const footerLines = [
-    'This quote is an indicative estimate based on the information you provided and is not a binding offer.',
-    'Your final premium is confirmed after underwriting assessment. Estimates compare your current credit life',
-    'premiums against InsurIQ pricing; actual savings depend on your credit agreements. FAIS Disclosure,',
-    `Privacy Policy (POPIA) and Complaints Procedure: ${SITE.url}/fais-disclosure · ${SITE.url}/privacy-policy · ${SITE.url}/complaints`,
-  ]
+  // Wrapped to the margins — the URLs come from SITE.url, so the length varies.
+  const disclaimer =
+    'This quote is an indicative estimate based on the information you provided and is not a binding offer. ' +
+    'Your final premium is confirmed after underwriting assessment. Estimates compare your current credit life ' +
+    'premiums against InsurIQ pricing; actual savings depend on your credit agreements. FAIS Disclosure, ' +
+    `Privacy Policy (POPIA) and Complaints Procedure: ${SITE.url}/fais-disclosure · ${SITE.url}/privacy-policy · ${SITE.url}/complaints`
+  const footerLines = wrap(disclaimer, regular, 7, PAGE_W - PAGE_MARGIN * 2)
   footerLines.forEach((line, i) => {
     drawText(page, line, PAGE_MARGIN, footerY + 10 - i * 10, 7, regular, MUTED)
   })
