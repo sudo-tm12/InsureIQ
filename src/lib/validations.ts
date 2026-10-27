@@ -1,22 +1,45 @@
 import { z } from 'zod'
 import { CREDIT_TYPE_VALUES } from '@/lib/quote/savings'
 
+/* ────────────────────────────────────────────────────────────────────────
+ * Enquiry forms — contact form.
+ * The same schemas run client-side (UX) and server-side (authoritative).
+ * ──────────────────────────────────────────────────────────────────────── */
+
+export const LOAN_TYPE_VALUES = ['vehicle', 'home', 'personal', 'business', 'other'] as const
+
+export type LoanType = (typeof LOAN_TYPE_VALUES)[number]
+
+export const LOAN_TYPES: ReadonlyArray<{ value: LoanType; label: string }> = [
+  { value: 'vehicle', label: 'Vehicle Finance' },
+  { value: 'home', label: 'Home Loan' },
+  { value: 'personal', label: 'Personal Loan' },
+  { value: 'business', label: 'Business Loan' },
+  { value: 'other', label: 'Other' },
+]
+
+export function loanTypeLabel(value: LoanType): string {
+  return LOAN_TYPES.find((type) => type.value === value)?.label ?? 'Other'
+}
+
+const loanTypeField = z.enum(LOAN_TYPE_VALUES, { error: 'Please select a loan type' })
+
+const saPhoneField = z
+  .string()
+  .trim()
+  .refine((value) => normalizeSaPhone(value) !== null, 'Please enter a valid SA phone number')
+
+const consentField = z.literal(true, { error: 'You must consent to proceed' })
+
 export const contactFormSchema = z.object({
-  firstName: z.string().min(2, 'First name is required').max(50),
-  lastName: z.string().min(2, 'Last name is required').max(50),
-  email: z.string().email('Please enter a valid email address'),
-  phone: z
-    .string()
-    .min(10, 'Please enter a valid SA phone number')
-    .max(15, 'Please enter a valid SA phone number'),
-  loanType: z.enum(['vehicle', 'home', 'personal', 'business', 'other'], {
-    error: 'Please select a loan type',
-  }),
+  firstName: z.string().trim().min(2, 'First name is required').max(50),
+  lastName: z.string().trim().min(2, 'Last name is required').max(50),
+  email: z.string().trim().email('Please enter a valid email address'),
+  phone: saPhoneField,
+  loanType: loanTypeField,
   loanAmount: z.string().min(1, 'Please enter an approximate loan amount'),
   message: z.string().max(500).optional(),
-  consent: z.literal(true, {
-    error: 'You must consent to proceed',
-  }),
+  consent: consentField,
 })
 
 export type ContactFormData = z.infer<typeof contactFormSchema>

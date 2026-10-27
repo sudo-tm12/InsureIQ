@@ -10,21 +10,50 @@
  * - Encrypted JSONL file otherwise (local development).
  */
 import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto'
+import type { QuoteResult } from '@/lib/quote/savings'
+import type { LoanType } from '@/lib/validations'
 import { storeLeadInFile, readLeadFromFile } from './file-store'
 import { storeLeadInPostgres, readLeadFromPostgres } from './postgres-store'
 
 const MAGIC = Buffer.from('IQLD', 'ascii')
 
-export interface LeadPayload {
+/** Privacy Policy version the visitor consented to — stored as consent evidence. */
+export const CONSENT_POLICY_VERSION = 'privacy-policy-2026-01'
+
+interface ConsentEvidence {
+  consentAt: string
+  policyVersion: string
+}
+
+/** Savings calculator lead — includes the SA ID number, so it is the most sensitive kind. */
+export interface QuoteLead extends ConsentEvidence {
+  kind: 'quote'
   firstName: string
   lastName: string
   idNumber: string
   email: string
   phone: string
-  consentAt: string
-  policyVersion: string
-  quote: unknown
+  quote: QuoteResult
 }
+
+export type EnquirySource = 'contact-form'
+
+/** Contact form enquiry. */
+export interface EnquiryLead extends ConsentEvidence {
+  kind: 'enquiry'
+  source: EnquirySource
+  name: string
+  email: string
+  phone: string
+  loanType: LoanType
+  loanAmount: string
+  message: string | null
+}
+
+export type LeadPayload = QuoteLead | EnquiryLead
+
+/** Records sealed before `kind` existed are all savings-quote leads. */
+type LegacyQuoteLead = Omit<QuoteLead, 'kind'>
 
 export interface StoredLead {
   id: string
@@ -61,7 +90,8 @@ export function unseal(sealed: string): LeadPayload {
   decipher.setAAD(MAGIC)
   decipher.setAuthTag(tag)
   const plaintext = Buffer.concat([decipher.update(ciphertext), decipher.final()])
-  return JSON.parse(plaintext.toString('utf-8')) as LeadPayload
+  const payload = JSON.parse(plaintext.toString('utf-8')) as LeadPayload | LegacyQuoteLead
+  return 'kind' in payload ? payload : { ...payload, kind: 'quote' }
 }
 
 /** POPIA retention window in months (default 24). */

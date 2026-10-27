@@ -24,6 +24,8 @@ import {
 } from '../src/lib/validations'
 import { findRateHundredths, searchProviders } from '../src/server/ratebook'
 import { sendLeadNotificationEmail } from '../src/server/quote/email'
+import { sendEnquiryNotificationEmail } from '../src/server/leads/notifications'
+import { seal, unseal, type LeadPayload } from '../src/server/leads/store'
 
 // Load .env.local so the rate-book key is available (dev convenience only).
 try {
@@ -222,13 +224,25 @@ test('lead emails HTML-escape visitor input', async () => {
       quote: sampleQuote,
       recordUrl: 'https://example.com/api/quote/lead-record?token=a.b.c',
     })
+    await sendEnquiryNotificationEmail({
+      kind: 'enquiry',
+      source: 'contact-form',
+      name: INJECTION,
+      email: 'jane@example.com',
+      phone: '27720000000',
+      loanType: 'vehicle',
+      loanAmount: 'under-50k',
+      message: INJECTION,
+      consentAt: '2026-10-27T00:00:00.000Z',
+      policyVersion: 'privacy-policy-2026-01',
+    })
   } finally {
     globalThis.fetch = realFetch
     if (realKey === undefined) delete process.env.RESEND_API_KEY
     else process.env.RESEND_API_KEY = realKey
   }
 
-  assert.equal(bodies.length, 1)
+  assert.equal(bodies.length, 2)
   for (const { html } of bodies) {
     assert.ok(!html.includes('<script>'), 'raw <script> reached the email')
     assert.ok(!html.includes('<img'), 'raw <img> reached the email')
@@ -236,3 +250,17 @@ test('lead emails HTML-escape visitor input', async () => {
   }
 })
 
+test('lead store: records sealed before `kind` existed read back as quote leads', () => {
+  const legacy = {
+    firstName: 'Jane',
+    lastName: 'Smith',
+    idNumber: '8001015009087',
+    email: 'jane@example.com',
+    phone: '27720000000',
+    consentAt: '2026-10-19T00:00:00.000Z',
+    policyVersion: 'privacy-policy-2026-01',
+    quote: sampleQuote,
+  }
+  const restored = unseal(seal(legacy as unknown as LeadPayload))
+  assert.equal(restored.kind, 'quote')
+})

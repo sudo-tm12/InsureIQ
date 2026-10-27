@@ -3,14 +3,12 @@ import { quoteLeadSchema } from '@/lib/validations'
 import { calculateSavings } from '@/lib/quote/savings'
 import { resolveRates, RateBookError } from '@/server/ratebook'
 import { getClientIp, rateLimit } from '@/server/http/rate-limit'
-import { storeLead } from '@/server/leads/store'
+import { CONSENT_POLICY_VERSION, storeLead } from '@/server/leads/store'
 import { signLeadRecordToken } from '@/server/leads/token'
 import { generateQuotePdf } from '@/server/quote/pdf'
 import { sendClientQuoteEmail, sendLeadNotificationEmail } from '@/server/quote/email'
 
 export const runtime = 'nodejs'
-
-const POLICY_VERSION = 'privacy-policy-2026-01'
 
 /**
  * Lead capture: validate (incl. SA ID + POPIA consent), generate the PDF
@@ -89,13 +87,14 @@ export async function POST(request: Request): Promise<NextResponse> {
 
     const consentAt = new Date().toISOString()
     const lead = await storeLead({
+      kind: 'quote',
       firstName: parsed.data.firstName,
       lastName: parsed.data.lastName,
       idNumber: parsed.data.idNumber,
       email: parsed.data.email,
       phone: parsed.data.phone,
       consentAt,
-      policyVersion: POLICY_VERSION,
+      policyVersion: CONSENT_POLICY_VERSION,
       quote,
     })
 

@@ -5,17 +5,9 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import Link from 'next/link'
 import { CheckCircle2, AlertCircle, Loader2, MessageCircle } from 'lucide-react'
-import { contactFormSchema, type ContactFormData } from '@/lib/validations'
+import { LOAN_TYPES, contactFormSchema, type ContactFormData } from '@/lib/validations'
 import { WHATSAPP_URL } from '@/lib/constants'
 import { cn } from '@/lib/utils'
-
-const LOAN_TYPES = [
-  { value: 'vehicle', label: 'Vehicle Finance' },
-  { value: 'home', label: 'Home Loan' },
-  { value: 'personal', label: 'Personal Loan' },
-  { value: 'business', label: 'Business Loan' },
-  { value: 'other', label: 'Other' },
-]
 
 const LOAN_AMOUNTS = [
   { value: 'under-50k', label: 'Under R50,000' },
@@ -145,7 +137,6 @@ export function ContactForm() {
               {...register('firstName')}
               className={cn(inputClass, errors.firstName && errorInputClass)}
               aria-invalid={!!errors.firstName}
-              aria-describedby={errors.firstName ? 'firstName-error' : undefined}
             />
             <FieldError message={errors.firstName?.message} />
           </div>
