@@ -120,6 +120,7 @@ export default function DebtManagementPage() {
           value: '1 in 4',
           label: 'South African adults are over-indebted. You are not alone.',
         },
+        cta: { label: 'Get a Free Quote', href: '/contact' },
       }}
     >
 

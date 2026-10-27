@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { CheckCircle2 } from 'lucide-react'
 import { Container } from '@/components/ui/Container'
-import { QuoteCalculator } from '@/components/forms/QuoteCalculator'
+import { SavingsCalculator } from '@/components/forms/SavingsCalculator'
 
 export const metadata: Metadata = {
   title: 'Get a Quote | InsurIQ',
@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 }
 
 const BENEFITS = [
-  'Risk-rated, personalised estimate',
+  'Compare all your accounts in one estimate',
   'No credit check required',
   'No commitment until you sign',
   'FSCA licensed and regulated',
@@ -61,8 +61,9 @@ export default function GetQuotePage() {
                 </span>
               </h1>
               <p className="text-[16px] text-white/65 font-body leading-relaxed mb-8 max-w-md">
-                Tell us about your loan, yourself and the cover you want. We&apos;ll show you an
-                estimate of what you&apos;re likely overpaying — and what InsurIQ would cost instead.
+                Add your credit accounts and we&apos;ll show you an estimate of what you&apos;re
+                likely overpaying on credit life cover — and what InsurIQ would cost instead.
+                Your personalised PDF quote arrives in your inbox.
               </p>
               <ul className="space-y-3">
                 {BENEFITS.map((benefit) => (
@@ -76,7 +77,7 @@ export default function GetQuotePage() {
 
             {/* Right: calculator */}
             <div>
-              <QuoteCalculator />
+              <SavingsCalculator />
             </div>
 
           </div>
@@ -86,11 +87,11 @@ export default function GetQuotePage() {
       {/* Explainer strip below fold */}
       <Container className="py-12 md:py-16">
         <p className="text-center text-sm text-brand-muted font-body max-w-2xl mx-auto leading-relaxed">
-          <strong className="text-brand-navy">How we calculate this:</strong> South African credit life
-          premiums are capped by the National Credit Act at R4.50 per R1,000 owed (R2.00 per R1,000 on
-          home loans) — most lenders charge the maximum. We compare that benchmark against InsurIQ&apos;s
-          risk-rated pricing for your age, cover and balance. Your actual premium is confirmed in your
-          personalised quote.
+          <strong className="text-brand-navy">How we calculate this:</strong> South African credit
+          life premiums are charged as a monthly rate per R1,000 of outstanding balance — most
+          lenders sit near the National Credit Act cap of R4.50 per R1,000. We estimate what each
+          of your accounts is likely costing you today and compare it against InsurIQ&apos;s rate on
+          the same balance. Your actual premium is confirmed in your personalised quote.
         </p>
       </Container>
     </div>

@@ -114,6 +114,7 @@ export default function CreditLifeInsurancePage() {
           value: '40%',
           label: 'cheaper than bundled bank rates on average',
         },
+        cta: { label: 'Get a Free Quote', href: '/get-quote' },
       }}
     >
 

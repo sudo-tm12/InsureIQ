@@ -1,6 +1,6 @@
 import type { Rule } from 'sanity'
 
-export default {
+const siteSettingsSchema = {
   name: 'siteSettings',
   title: 'Site Settings',
   type: 'document',
@@ -75,3 +75,5 @@ export default {
     },
   ],
 }
+
+export default siteSettingsSchema

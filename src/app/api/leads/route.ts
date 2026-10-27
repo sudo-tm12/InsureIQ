@@ -1,63 +1,76 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { contactFormSchema } from '@/lib/validations'
+import { NextResponse } from 'next/server'
+import { enquiryLeadSchema, normalizeSaPhone, type EnquiryLeadData } from '@/lib/validations'
+import { getClientIp, rateLimit } from '@/server/http/rate-limit'
+import { CONSENT_POLICY_VERSION, storeLead, type EnquiryLead } from '@/server/leads/store'
+import { sendEnquiryNotificationEmail } from '@/server/leads/notifications'
 
-// Simple in-memory rate limiter — resets on cold start, suitable for Phase 1
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
-const MAX_REQUESTS = 3
-const WINDOW_MS = 60 * 60 * 1000 // 1 hour
+export const runtime = 'nodejs'
 
-function getIp(req: NextRequest): string {
-  return (
-    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
-    req.headers.get('x-real-ip') ??
-    'unknown'
-  )
-}
-
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now()
-  const entry = rateLimitMap.get(ip)
-
-  if (!entry || now > entry.resetAt) {
-    rateLimitMap.set(ip, { count: 1, resetAt: now + WINDOW_MS })
-    return true
+function toEnquiryLead(data: EnquiryLeadData, consentAt: string): EnquiryLead {
+  const shared = {
+    kind: 'enquiry' as const,
+    source: data.source,
+    phone: normalizeSaPhone(data.phone) ?? data.phone,
+    loanType: data.loanType,
+    consentAt,
+    policyVersion: CONSENT_POLICY_VERSION,
   }
-
-  if (entry.count >= MAX_REQUESTS) return false
-
-  entry.count += 1
-  return true
+  if (data.source === 'contact-form') {
+    return {
+      ...shared,
+      name: `${data.firstName} ${data.lastName}`,
+      email: data.email,
+      loanAmount: data.loanAmount,
+      message: data.message?.trim() || null,
+    }
+  }
+  return { ...shared, name: data.name, email: null, loanAmount: null, message: null }
 }
 
-export async function POST(req: NextRequest) {
-  const ip = getIp(req)
-
-  if (!checkRateLimit(ip)) {
+/**
+ * Enquiry capture for the contact form and the CTA quick-quote banner:
+ * validate (incl. POPIA consent), store encrypted with the consent timestamp,
+ * and notify the leads inbox. No PII is ever logged.
+ */
+export async function POST(request: Request): Promise<NextResponse> {
+  const limit = rateLimit(`leads:${getClientIp(request)}`, 5, 60 * 60_000)
+  if (!limit.ok) {
     return NextResponse.json(
       { error: 'Too many requests. Please try again later.' },
-      { status: 429 },
+      { status: 429, headers: { 'Retry-After': String(limit.retryAfterSeconds) } },
+    )
+  }
+
+  let body: unknown
+  try {
+    body = await request.json()
+  } catch {
+    return NextResponse.json({ error: 'Invalid request body.' }, { status: 400 })
+  }
+
+  const parsed = enquiryLeadSchema.safeParse(body)
+  if (!parsed.success) {
+    return NextResponse.json(
+      {
+        error: 'Please check the form and try again.',
+        issues: parsed.error.issues.map((issue) => ({
+          path: issue.path.join('.'),
+          message: issue.message,
+        })),
+      },
+      { status: 422 },
     )
   }
 
   try {
-    const body = await req.json()
-    const data = contactFormSchema.parse(body)
-
-    // TODO: Wire to Resend for email notification to Eddie
-    // TODO: Wire to Sanity CMS to log the lead
-    console.log('New lead:', {
-      name: `${data.firstName} ${data.lastName}`,
-      email: data.email,
-      phone: data.phone,
-      loanType: data.loanType,
-      loanAmount: data.loanAmount,
-      source: (body as { source?: string }).source ?? 'contact-form',
-      consentTimestamp: new Date().toISOString(),
-    })
-
-    return NextResponse.json({ success: true }, { status: 200 })
-  } catch (error) {
-    console.error('Lead submission error:', error)
-    return NextResponse.json({ error: 'Invalid submission' }, { status: 400 })
+    const lead = toEnquiryLead(parsed.data, new Date().toISOString())
+    await storeLead(lead)
+    // The lead is captured either way; a failed notification is logged inside.
+    await sendEnquiryNotificationEmail(lead)
+    return NextResponse.json({ ok: true }, { headers: { 'Cache-Control': 'no-store' } })
+  } catch {
+    // Never leak details (PII is in scope) — log the failure class only.
+    console.error('Enquiry submission failed')
+    return NextResponse.json({ error: 'Something went wrong.' }, { status: 500 })
   }
 }

@@ -1,6 +1,6 @@
 import type { Rule } from 'sanity'
 
-export default {
+const postSchema = {
   name: 'post',
   title: 'Blog Post',
   type: 'document',
@@ -142,3 +142,5 @@ export default {
     },
   ],
 }
+
+export default postSchema

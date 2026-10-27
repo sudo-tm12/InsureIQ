@@ -1,6 +1,6 @@
 import type { Rule } from 'sanity'
 
-export default {
+const testimonialSchema = {
   name: 'testimonial',
   title: 'Testimonial',
   type: 'document',
@@ -60,3 +60,5 @@ export default {
     },
   },
 }
+
+export default testimonialSchema
