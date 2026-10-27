@@ -50,7 +50,12 @@ export interface EnquiryLead extends ConsentEvidence {
   message: string | null
 }
 
-export type LeadPayload = QuoteLead | EnquiryLead
+export interface NewsletterLead extends ConsentEvidence {
+  kind: 'newsletter'
+  email: string
+}
+
+export type LeadPayload = QuoteLead | EnquiryLead | NewsletterLead
 
 /** Records sealed before `kind` existed are all savings-quote leads. */
 type LegacyQuoteLead = Omit<QuoteLead, 'kind'>

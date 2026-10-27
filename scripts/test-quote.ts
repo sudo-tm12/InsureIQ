@@ -21,6 +21,7 @@ import {
   enquiryLeadSchema,
   isValidSaIdNumber,
   maskIdNumber,
+  newsletterSchema,
   normalizeSaPhone,
 } from '../src/lib/validations'
 import { findRateHundredths, searchProviders } from '../src/server/ratebook'
@@ -247,6 +248,12 @@ test('CTA banner payload is accepted by /api/leads (was always rejected)', () =>
   assert.ok(!badPhone.success, 'phone must be a real SA number')
 })
 
+test('newsletter sign-up requires a valid email and POPIA consent', () => {
+  assert.ok(newsletterSchema.safeParse({ email: 'jane@example.com', consent: true }).success)
+  assert.ok(!newsletterSchema.safeParse({ email: 'jane@example.com', consent: false }).success)
+  assert.ok(!newsletterSchema.safeParse({ email: 'not-an-email', consent: true }).success)
+})
+
 test('lead emails HTML-escape visitor input', async () => {
   const realFetch = globalThis.fetch
   const realKey = process.env.RESEND_API_KEY
@@ -307,4 +314,14 @@ test('lead store: records sealed before `kind` existed read back as quote leads'
   }
   const restored = unseal(seal(legacy as unknown as LeadPayload))
   assert.equal(restored.kind, 'quote')
+
+  const newsletter = unseal(
+    seal({
+      kind: 'newsletter',
+      email: 'jane@example.com',
+      consentAt: '2026-10-27T00:00:00.000Z',
+      policyVersion: 'privacy-policy-2026-01',
+    }),
+  )
+  assert.equal(newsletter.kind, 'newsletter')
 })

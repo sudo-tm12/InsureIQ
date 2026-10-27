@@ -1,12 +1,12 @@
 /**
- * Leads-inbox notifications for website enquiries (server-only).
+ * Leads-inbox notifications for enquiries and newsletter sign-ups (server-only).
  * Savings-quote leads have their own richer email in server/quote/email.ts.
  * Every interpolated value is HTML-escaped — it is all visitor-typed text.
  */
 import { escapeHtml } from '@/lib/utils'
 import { loanTypeLabel } from '@/lib/validations'
 import { leadsInbox, sendEmail, type EmailResult } from '@/server/email/resend'
-import type { EnquiryLead, EnquirySource } from './store'
+import type { EnquiryLead, EnquirySource, NewsletterLead } from './store'
 
 const SOURCE_LABELS: Record<EnquirySource, string> = {
   'contact-form': 'Contact form',
@@ -47,6 +47,17 @@ export async function sendEnquiryNotificationEmail(lead: EnquiryLead): Promise<E
       ['Loan type', loanTypeLabel(lead.loanType)],
       ['Loan amount', lead.loanAmount],
       ['Message', lead.message],
+      ['Consent recorded', `${lead.consentAt} · ${lead.policyVersion}`],
+    ]),
+  })
+}
+
+export async function sendNewsletterSignupEmail(lead: NewsletterLead): Promise<EmailResult> {
+  return sendEmail({
+    to: leadsInbox(),
+    subject: 'New newsletter subscriber',
+    html: notification('New newsletter subscriber', [
+      ['Email', lead.email],
       ['Consent recorded', `${lead.consentAt} · ${lead.policyVersion}`],
     ]),
   })

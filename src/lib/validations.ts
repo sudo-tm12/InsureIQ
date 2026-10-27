@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { CREDIT_TYPE_VALUES } from '@/lib/quote/savings'
 
 /* ────────────────────────────────────────────────────────────────────────
- * Enquiry forms — contact form and CTA quick-quote banner.
+ * Enquiry forms — contact form, CTA quick-quote banner, newsletter.
  * The same schemas run client-side (UX) and server-side (authoritative).
  * ──────────────────────────────────────────────────────────────────────── */
 
@@ -61,6 +61,13 @@ export const enquiryLeadSchema = z.discriminatedUnion('source', [
 ])
 
 export type EnquiryLeadData = z.infer<typeof enquiryLeadSchema>
+
+export const newsletterSchema = z.object({
+  email: z.string().trim().email('Please enter a valid email address').max(254),
+  consent: consentField,
+})
+
+export type NewsletterData = z.infer<typeof newsletterSchema>
 
 /* ────────────────────────────────────────────────────────────────────────
  * SA ID number — 13 digits, valid YYMMDD date, Luhn check digit.
