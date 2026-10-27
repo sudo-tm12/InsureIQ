@@ -1,10 +1,11 @@
 /**
- * Quote engine tests — run with: npm run test:quote
+ * Quote engine and lead capture tests — run with: npm run test:quote
  *
  * Includes the acceptance test from QUOTE-CALCULATOR-SPEC.md §3.1: the
  * worked example must reconcile to the cent, and the real encrypted rate book
  * must decrypt end-to-end (key → decrypt → lookup → maths). No real
  * provider rate appears in this public repo — example rates are illustrative.
+ * Email tests stub fetch — nothing is ever sent to Resend.
  */
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
@@ -16,8 +17,13 @@ import {
   insurIqRateForType,
   monthlyPremiumCents,
 } from '../src/lib/quote/savings'
-import { isValidSaIdNumber, maskIdNumber, normalizeSaPhone } from '../src/lib/validations'
+import {
+  isValidSaIdNumber,
+  maskIdNumber,
+  normalizeSaPhone,
+} from '../src/lib/validations'
 import { findRateHundredths, searchProviders } from '../src/server/ratebook'
+import { sendLeadNotificationEmail } from '../src/server/quote/email'
 
 // Load .env.local so the rate-book key is available (dev convenience only).
 try {
@@ -185,3 +191,48 @@ test('SA phone normalisation', () => {
   assert.equal(normalizeSaPhone('0821234567'), '27821234567')
   assert.equal(normalizeSaPhone('12345'), null)
 })
+
+/* ── Lead capture ──────────────────────────────────────────────────────── */
+
+const INJECTION = '<img src=x onerror=alert(1)><script>alert(1)</script>'
+
+const sampleQuote = calculateSavings(
+  [{ provider: 'Example Credit Card', accountNumber: INJECTION, balance: 100_000, creditType: 'credit-card' }],
+  [{ provider: 'Example Credit Card', rateHundredths: 340 }],
+)
+
+test('lead emails HTML-escape visitor input', async () => {
+  const realFetch = globalThis.fetch
+  const realKey = process.env.RESEND_API_KEY
+  const bodies: Array<{ html: string }> = []
+  process.env.RESEND_API_KEY = 'test-key'
+  globalThis.fetch = (async (_input: string | URL | Request, init?: RequestInit) => {
+    bodies.push(JSON.parse(String(init?.body)) as { html: string })
+    return new Response('{}', { status: 200 })
+  }) as typeof fetch
+
+  try {
+    await sendLeadNotificationEmail({
+      firstName: INJECTION,
+      lastName: 'Smith',
+      idNumber: '8001015009087',
+      email: 'jane@example.com',
+      phone: '27720000000',
+      consentAt: '2026-10-27T00:00:00.000Z',
+      quote: sampleQuote,
+      recordUrl: 'https://example.com/api/quote/lead-record?token=a.b.c',
+    })
+  } finally {
+    globalThis.fetch = realFetch
+    if (realKey === undefined) delete process.env.RESEND_API_KEY
+    else process.env.RESEND_API_KEY = realKey
+  }
+
+  assert.equal(bodies.length, 1)
+  for (const { html } of bodies) {
+    assert.ok(!html.includes('<script>'), 'raw <script> reached the email')
+    assert.ok(!html.includes('<img'), 'raw <img> reached the email')
+    assert.ok(html.includes('&lt;script&gt;'), 'input should appear escaped')
+  }
+})
+

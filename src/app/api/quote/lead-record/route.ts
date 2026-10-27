@@ -4,6 +4,7 @@ import { readLead, type LeadPayload } from '@/server/leads/store'
 import { maskIdNumber } from '@/lib/validations'
 import type { CreditType } from '@/lib/quote/savings'
 import { creditTypeLabel } from '@/lib/quote/savings'
+import { escapeHtml } from '@/lib/utils'
 
 export const runtime = 'nodejs'
 
@@ -32,23 +33,6 @@ export async function GET(request: Request): Promise<NextResponse> {
 
   return new NextResponse(html('Lead record', leadBody(lead)), {
     headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' },
-  })
-}
-
-function escapeHtml(value: string): string {
-  return value.replace(/[&<>"']/g, (ch) => {
-    switch (ch) {
-      case '&':
-        return '&amp;'
-      case '<':
-        return '&lt;'
-      case '>':
-        return '&gt;'
-      case '"':
-        return '&quot;'
-      default:
-        return '&#39;'
-    }
   })
 }
 
