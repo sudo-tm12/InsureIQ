@@ -25,6 +25,7 @@ import {
   normalizeSaPhone,
 } from '../src/lib/validations'
 import { findRateHundredths, searchProviders } from '../src/server/ratebook'
+import { formatCents } from '../src/lib/utils'
 import { generateQuotePdf } from '../src/server/quote/pdf'
 import { sendLeadNotificationEmail } from '../src/server/quote/email'
 import { sendEnquiryNotificationEmail } from '../src/server/leads/notifications'
@@ -195,6 +196,15 @@ test('SA phone normalisation', () => {
   assert.equal(normalizeSaPhone('+27821234567'), '27821234567')
   assert.equal(normalizeSaPhone('0821234567'), '27821234567')
   assert.equal(normalizeSaPhone('12345'), null)
+})
+
+test('money prints as "R 1 234.50" (spec §3) whatever the runtime locale', () => {
+  const nb = ' '
+  assert.equal(formatCents(123450), `R${nb}1${nb}234.50`)
+  assert.equal(formatCents(34000), `R${nb}340.00`)
+  assert.equal(formatCents(5), `R${nb}0.05`)
+  assert.equal(formatCents(0), `R${nb}0.00`)
+  assert.equal(formatCents(1_000_000_000), `R${nb}10${nb}000${nb}000.00`)
 })
 
 /* ── Lead capture ──────────────────────────────────────────────────────── */
