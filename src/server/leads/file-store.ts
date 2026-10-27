@@ -17,6 +17,20 @@ import {
 // scoped to this store's inputs instead of the whole project.
 const LEADS_FILE = path.join(process.cwd(), '.data', 'leads.jsonl')
 
+/**
+ * One JSONL line → record, or null if unreadable. Tolerates a UTF-8 BOM
+ * (Windows PowerShell 5.1 adds one when it creates or clears the file).
+ */
+function parseRecord(line: string): StoredLead | null {
+  const text = line.replace(/^﻿/, '').trim()
+  if (!text) return null
+  try {
+    return JSON.parse(text) as StoredLead
+  } catch {
+    return null
+  }
+}
+
 export function storeLeadInFile(payload: LeadPayload): { id: string; createdAt: string } {
   const record: StoredLead = {
     id: randomUUID(),
@@ -32,9 +46,8 @@ export function storeLeadInFile(payload: LeadPayload): { id: string; createdAt: 
 export function readLeadFromFile(id: string): LeadPayload | null {
   if (!existsSync(LEADS_FILE)) return null
   for (const line of readFileSync(LEADS_FILE, 'utf-8').split('\n')) {
-    if (!line.trim()) continue
-    const record = JSON.parse(line) as StoredLead
-    if (record.id === id) return unseal(record.sealed)
+    const record = parseRecord(line)
+    if (record?.id === id) return unseal(record.sealed)
   }
   return null
 }
@@ -45,10 +58,12 @@ function purgeExpiredLeads(): void {
   const cutoff = Date.now() - retentionMonths() * 30 * 24 * 60 * 60 * 1000
   const kept = readFileSync(LEADS_FILE, 'utf-8')
     .split('\n')
+    .map((line) => line.replace(/^﻿/, '').trim())
     .filter((line) => {
-      if (!line.trim()) return true
-      const record = JSON.parse(line) as StoredLead
-      return new Date(record.createdAt).getTime() >= cutoff
+      if (!line) return false
+      const record = parseRecord(line)
+      // Never destroy a line we cannot read — only drop records proven expired.
+      return record === null || new Date(record.createdAt).getTime() >= cutoff
     })
-  writeFileSync(LEADS_FILE, kept.join('\n'), 'utf-8')
+  writeFileSync(LEADS_FILE, kept.length > 0 ? `${kept.join('\n')}\n` : '', 'utf-8')
 }
