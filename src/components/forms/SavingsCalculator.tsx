@@ -689,8 +689,10 @@ export function SavingsCalculator() {
                 </tr>
               </thead>
               <tbody>
-                {quote.rows.map((row) => (
-                  <tr key={`${row.provider}-${row.accountNumber ?? ''}`} className="border-t border-brand-border">
+                {/* Index key: rows are a fixed server result, and provider + account
+                    number is not unique (same provider twice, no account number). */}
+                {quote.rows.map((row, index) => (
+                  <tr key={index} className="border-t border-brand-border">
                     <td className="px-3 py-2.5">
                       <span className="block font-medium text-brand-navy">{row.provider}</span>
                       <span className="block text-[11px] text-brand-muted">
