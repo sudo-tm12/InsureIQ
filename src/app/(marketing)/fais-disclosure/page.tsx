@@ -92,8 +92,9 @@ export default function FaisDisclosurePage() {
       </ul>
       <p>
         Where a conflict of interest exists, it will be disclosed to you in writing before any
-        advice is given or any transaction is concluded. Our full Conflict of Interest Management
-        Policy is available on request from{' '}
+        advice is given or any transaction is concluded. Read our full{' '}
+        <Link href="/conflict-of-interest">Conflict of Interest Policy</Link>, or request a copy
+        from{' '}
         <a href={`mailto:${REGULATORY.complianceOfficerEmail}`}>
           {REGULATORY.complianceOfficerEmail}
         </a>

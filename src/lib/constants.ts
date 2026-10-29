@@ -75,6 +75,7 @@ export const LEGAL_LINKS = [
   { label: "Privacy Policy", href: "/privacy-policy" },
   { label: "Terms & Conditions", href: "/terms" },
   { label: "FAIS Disclosure", href: "/fais-disclosure" },
+  { label: "Conflict of Interest Policy", href: "/conflict-of-interest" },
   { label: "Complaints Procedure", href: "/complaints" },
 ] as const;
 
