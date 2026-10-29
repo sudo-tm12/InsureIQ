@@ -15,6 +15,7 @@ import { Accordion, type AccordionItem } from '@/components/ui/Accordion'
 import { ProductLayout } from '@/components/layout/ProductLayout'
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/products/debt-management' },
   title: 'Debt Management | Debt Review South Africa',
   description:
     'NCR-registered debt review and debt mediation services in South Africa. Legal protection, reduced repayments, one monthly payment. Free assessment.',

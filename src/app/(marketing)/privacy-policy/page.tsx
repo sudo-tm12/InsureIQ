@@ -3,6 +3,7 @@ import { LegalLayout } from '@/components/layout/LegalLayout'
 import { REGULATORY, CONTACT } from '@/lib/constants'
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/privacy-policy' },
   title: 'Privacy Policy',
   description:
     'InsurIQ Privacy Policy. How we collect, use, and protect your personal information in compliance with POPIA.',

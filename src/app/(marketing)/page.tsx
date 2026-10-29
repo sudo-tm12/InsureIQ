@@ -12,6 +12,7 @@ import { CTABanner } from '@/components/sections/CTABanner'
 export const revalidate = 60
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/' },
   title: { absolute: 'InsurIQ — Intelligent Insurance Solutions' },
   description:
     'Affordable, transparent credit life insurance for South Africans. FSCA licensed. Get your quote in 60 seconds.',

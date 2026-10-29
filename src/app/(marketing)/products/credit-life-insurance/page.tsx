@@ -15,6 +15,7 @@ import { Accordion, type AccordionItem } from '@/components/ui/Accordion'
 import { ProductLayout } from '@/components/layout/ProductLayout'
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/products/credit-life-insurance' },
   title: 'Credit Life Insurance | From R89/month',
   description:
     'Affordable credit life insurance for South Africans. Covers vehicle finance, home loans, and personal loans. FSCA licensed. Up to 40% cheaper than your bank.',

@@ -5,6 +5,7 @@ import { Container } from '@/components/ui/Container'
 import { CTABanner } from '@/components/sections/CTABanner'
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/products' },
   title: 'Insurance Products',
   description:
     'Credit life insurance, financial advisory, and debt management from InsurIQ. FSCA licensed. Transparent pricing. South Africa.',

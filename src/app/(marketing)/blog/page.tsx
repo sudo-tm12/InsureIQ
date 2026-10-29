@@ -17,6 +17,7 @@ import { mockPosts, getPostsByCategory, formatDate, type BlogPost } from '@/lib/
 import { cn } from '@/lib/utils'
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/blog' },
   title: 'Insurance Insights | Blog',
   description:
     'Financial education on credit life insurance, debt management, and FSCA-licensed advice for South Africans.',

@@ -3,6 +3,7 @@ import { LegalLayout } from '@/components/layout/LegalLayout'
 import { REGULATORY } from '@/lib/constants'
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/complaints' },
   title: 'Complaints Procedure',
   description:
     'How to submit a complaint to InsurIQ. Response within 2 business days. Escalation to FSCA and FAIS Ombud if required.',
