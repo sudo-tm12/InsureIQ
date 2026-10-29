@@ -14,7 +14,7 @@ const CONTACT_ITEMS = [
   {
     icon: MessageCircle,
     label: 'WhatsApp',
-    value: 'Chat with us directly',
+    value: CONTACT.whatsappDisplay,
     href: WHATSAPP_URL,
     external: true,
   },

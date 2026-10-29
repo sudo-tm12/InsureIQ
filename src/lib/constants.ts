@@ -34,15 +34,20 @@ export const REGULATORY = {
 /** "FSP No: 12345", or null while the licence number is not configured. */
 export const FSP_LABEL = REGULATORY.fspNumber ? `FSP No: ${REGULATORY.fspNumber}` : null;
 
+/** InsurIQ's WhatsApp Business line, international format, digits only. */
+const WHATSAPP_NUMBER =
+  process.env.NEXT_PUBLIC_WHATSAPP_NUMBER?.replace(/\D/g, "") || "27690423824";
+
 /**
  * Contact channels.
- * NEXT_PUBLIC_WHATSAPP_NUMBER must be set in .env.local — international format,
- * digits only (e.g. 27821234567).
+ * NEXT_PUBLIC_WHATSAPP_NUMBER overrides the WhatsApp line — international
+ * format, digits only (e.g. 27821234567).
  */
 export const CONTACT = {
   email: "hello@insuriq.co.za",
-  whatsappNumber:
-    process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "27000000000",
+  whatsappNumber: WHATSAPP_NUMBER,
+  /** "+27 69 042 3824" */
+  whatsappDisplay: `+${WHATSAPP_NUMBER.slice(0, 2)} ${WHATSAPP_NUMBER.slice(2, 4)} ${WHATSAPP_NUMBER.slice(4, 7)} ${WHATSAPP_NUMBER.slice(7)}`,
   whatsappDefaultMessage:
     "Hi InsurIQ, I'd like to find out more about your products.",
 } as const;
