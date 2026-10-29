@@ -110,6 +110,8 @@ export async function generateQuotePdf(input: QuotePdfInput): Promise<Uint8Array
     const width = (image.width / image.height) * height
     page.drawImage(image, { x: PAGE_MARGIN, y: PAGE_H - 66, width, height })
   } catch {
+    // Visible in runtime logs so a missing logo can't go unnoticed again.
+    console.warn('Quote PDF: logo file unavailable, using text wordmark')
     drawText(page, 'InsurIQ', PAGE_MARGIN, PAGE_H - 56, 22, bold, WHITE)
   }
   drawText(page, 'Credit Life Savings Quote', PAGE_W - PAGE_MARGIN - 220, PAGE_H - 52, 15, bold, WHITE)
