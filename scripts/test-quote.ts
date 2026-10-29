@@ -31,6 +31,7 @@ import { sendLeadNotificationEmail } from '../src/server/quote/email'
 import { sendEnquiryNotificationEmail } from '../src/server/leads/notifications'
 import { seal, unseal, type LeadPayload } from '../src/server/leads/store'
 import { readJsonPost } from '../src/server/http/json-post'
+import { rateLimitPersistent } from '../src/server/http/rate-limit'
 
 // Load .env.local so the rate-book key is available (dev convenience only).
 try {
@@ -395,4 +396,21 @@ test('POST guard: only same-origin JSON within the size cap is accepted', async 
   // Oversized and malformed bodies
   assert.equal(await status({ ...json, 'sec-fetch-site': 'same-origin' }, 'x'.repeat(40_000)), 413)
   assert.equal(await status({ ...json, 'sec-fetch-site': 'same-origin' }, '{not json'), 400)
+})
+
+test('lead rate limit: 5 per window per client, falls back to memory without a database', async () => {
+  const realUrl = process.env.DATABASE_URL
+  delete process.env.DATABASE_URL // never touch the real database from tests
+  try {
+    const from = (ip: string) => new Request('https://www.insuriq.co.za/api/leads', { headers: { 'x-forwarded-for': ip } })
+    for (let i = 0; i < 5; i++) assert.equal((await rateLimitPersistent('test', from('203.0.113.7'), 5, 60_000)).ok, true)
+    const blocked = await rateLimitPersistent('test', from('203.0.113.7'), 5, 60_000)
+    assert.equal(blocked.ok, false)
+    assert.ok(blocked.retryAfterSeconds > 0)
+    // Other clients and other endpoints keep their own quota.
+    assert.equal((await rateLimitPersistent('test', from('203.0.113.8'), 5, 60_000)).ok, true)
+    assert.equal((await rateLimitPersistent('other', from('203.0.113.7'), 5, 60_000)).ok, true)
+  } finally {
+    if (realUrl !== undefined) process.env.DATABASE_URL = realUrl
+  }
 })

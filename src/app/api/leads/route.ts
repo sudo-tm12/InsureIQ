@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { enquiryLeadSchema, normalizeSaPhone, type EnquiryLeadData } from '@/lib/validations'
-import { getClientIp, rateLimit } from '@/server/http/rate-limit'
+import { rateLimitPersistent } from '@/server/http/rate-limit'
 import { readJsonPost } from '@/server/http/json-post'
 import { CONSENT_POLICY_VERSION, storeLead, type EnquiryLead } from '@/server/leads/store'
 import { sendEnquiryNotificationEmail } from '@/server/leads/notifications'
@@ -38,7 +38,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   if (!input.ok) return input.response
   const body = input.body
 
-  const limit = rateLimit(`leads:${getClientIp(request)}`, 5, 60 * 60_000)
+  const limit = await rateLimitPersistent('leads', request, 5, 60 * 60_000)
   if (!limit.ok) {
     return NextResponse.json(
       { error: 'Too many requests. Please try again later.' },

@@ -7,7 +7,7 @@
  * sealed ciphertext is stored — the database never sees PII in the clear.
  */
 import { randomUUID } from 'node:crypto'
-import { neon, type NeonQueryFunction } from '@neondatabase/serverless'
+import { sql, type Sql } from '@/server/db'
 import {
   retentionMonths,
   seal,
@@ -15,14 +15,6 @@ import {
   type LeadPayload,
   type StoredLead,
 } from './store'
-
-type Sql = NeonQueryFunction<false, false>
-
-function sql(): Sql {
-  const url = process.env.DATABASE_URL?.trim()
-  if (!url) throw new Error('DATABASE_URL is not configured')
-  return neon(url)
-}
 
 // Once per server instance. Keep in sync with scripts/leads/schema.sql.
 let schemaReady: Promise<void> | null = null
