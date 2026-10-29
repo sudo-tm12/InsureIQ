@@ -645,12 +645,13 @@ export function SavingsCalculator() {
 
           {/* Savings highlight (mirrors the Report summary) */}
           <div className="bg-brand-navy rounded-xl p-5 mb-4">
-            <div className="flex items-center justify-between">
-              <div>
+            {/* Wraps below the amount on narrow screens instead of overlapping it */}
+            <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
+              <div className="min-w-0">
                 <p className="text-white/60 text-xs font-body uppercase tracking-wider mb-1">
                   Total savings per month
                 </p>
-                <p className="font-display font-bold text-white text-3xl leading-none">
+                <p className="font-display font-bold text-white text-2xl sm:text-3xl leading-none whitespace-nowrap">
                   {formatCents(quote.summary.savingMonthlyCents)}
                 </p>
                 <p className="text-white/60 text-sm font-body mt-1">
@@ -658,7 +659,7 @@ export function SavingsCalculator() {
                 </p>
               </div>
               {savingPercent > 0 && (
-                <div className="text-right">
+                <div className="sm:text-right">
                   <p className="font-display font-bold text-brand-cyan text-3xl leading-none">
                     {savingPercent}%
                   </p>
