@@ -26,9 +26,11 @@ export default function FaisDisclosurePage() {
         <li>
           <strong>Trading name:</strong> InsurIQ
         </li>
-        <li>
-          <strong>FSP licence number:</strong> {REGULATORY.fspNumber}
-        </li>
+        {REGULATORY.fspNumber && (
+          <li>
+            <strong>FSP licence number:</strong> {REGULATORY.fspNumber}
+          </li>
+        )}
         <li>
           <strong>Registered office:</strong> {REGULATORY.registeredOffice}
         </li>

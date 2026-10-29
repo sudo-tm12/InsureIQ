@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { Eye, TrendingDown, BadgeCheck, ShieldCheck, FileText, AlertTriangle } from 'lucide-react'
 import { Container } from '@/components/ui/Container'
-import { REGULATORY, LEGAL_LINKS } from '@/lib/constants'
+import { FSP_LABEL, REGULATORY, LEGAL_LINKS } from '@/lib/constants'
 import Link from 'next/link'
 
 export const metadata: Metadata = {
@@ -32,7 +32,7 @@ const CREDENTIALS = [
   {
     icon: ShieldCheck,
     title: 'FSCA Authorised',
-    body: `${REGULATORY.registeredName} is an Authorised Financial Services Provider operating under the Financial Advisory and Intermediary Services Act (FAIS). FSP No: ${REGULATORY.fspNumber}.`,
+    body: `${REGULATORY.registeredName} is an Authorised Financial Services Provider operating under the Financial Advisory and Intermediary Services Act (FAIS).${FSP_LABEL ? ` ${FSP_LABEL}.` : ''}`,
   },
   {
     icon: FileText,

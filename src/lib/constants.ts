@@ -19,13 +19,20 @@ export const SITE = {
  * TODO: Replace placeholders with confirmed values before launch (see PRD §7).
  */
 export const REGULATORY = {
-  fspNumber: "FSP application in progress",
+  /**
+   * FSCA FSP licence number, from NEXT_PUBLIC_FSP_NUMBER (digits only).
+   * Null until configured: every "FSP No" mention is omitted, never faked.
+   */
+  fspNumber: process.env.NEXT_PUBLIC_FSP_NUMBER?.trim() || null,
   registeredName: "InsurIQ (Pty) Ltd",
   registeredOffice: "TBC — South Africa",
   popiaOfficerEmail: "privacy@insuriq.co.za",
   complianceOfficerEmail: "compliance@insuriq.co.za",
   complaintsEmail: "complaints@insuriq.co.za",
 } as const;
+
+/** "FSP No: 12345", or null while the licence number is not configured. */
+export const FSP_LABEL = REGULATORY.fspNumber ? `FSP No: ${REGULATORY.fspNumber}` : null;
 
 /**
  * Contact channels.

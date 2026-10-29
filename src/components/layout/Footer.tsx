@@ -235,8 +235,12 @@ export function Footer() {
         <div className="border-t border-white/10 py-8 space-y-2 text-[11px] text-white/40 text-center md:text-left">
           <p className="leading-relaxed">
             {REGULATORY.registeredName} is an Authorised Financial Services
-            Provider. FSP No:{' '}
-            <span className="text-white/60">{REGULATORY.fspNumber}</span>.
+            Provider.
+            {REGULATORY.fspNumber && (
+              <>
+                {' '}FSP No: <span className="text-white/60">{REGULATORY.fspNumber}</span>.
+              </>
+            )}
           </p>
           <p className="leading-relaxed">
             Registered in South Africa. POPIA Compliance Officer:{' '}

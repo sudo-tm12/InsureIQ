@@ -4,7 +4,7 @@ import type { SanitySiteSettings } from './types'
 import { REGULATORY, CONTACT } from '@/lib/constants'
 
 export async function getSiteSettings(): Promise<
-  SanitySiteSettings & { fspNumber: string; contactEmail: string }
+  Omit<SanitySiteSettings, 'fspNumber'> & { fspNumber: string | null; contactEmail: string }
 > {
   if (!isSanityConfigured) {
     return {

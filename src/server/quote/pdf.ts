@@ -9,7 +9,7 @@ import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from 'pdf
 import type { QuoteResult } from '@/lib/quote/savings'
 import { creditTypeLabel } from '@/lib/quote/savings'
 import { formatCents } from '@/lib/utils'
-import { REGULATORY, SITE } from '@/lib/constants'
+import { FSP_LABEL, REGULATORY, SITE } from '@/lib/constants'
 
 export interface QuotePdfInput {
   firstName: string
@@ -224,7 +224,13 @@ export async function generateQuotePdf(input: QuotePdfInput): Promise<Uint8Array
   })
   drawText(
     page,
-    `${SITE.name} is an Authorised Financial Services Provider · ${REGULATORY.fspNumber} · © ${new Date().getFullYear()} ${SITE.name}`,
+    [
+      `${SITE.name} is an Authorised Financial Services Provider`,
+      FSP_LABEL,
+      `© ${new Date().getFullYear()} ${SITE.name}`,
+    ]
+      .filter(Boolean)
+      .join(' · '),
     PAGE_MARGIN,
     footerY + 24,
     7.5,
