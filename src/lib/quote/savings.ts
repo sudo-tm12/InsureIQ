@@ -16,7 +16,9 @@ export const RATE_REDUCTION_HUNDREDTHS = 50
 export const NEW_RATE_FLOOR_HUNDREDTHS = 250
 /**
  * NCA credit life cap on mortgage agreements: R2.00 per R1,000 per month.
- * The R2.50 floor must never apply to home loans — it would breach the cap.
+ * The R2.50 floor must never apply to home loans — it would breach the cap,
+ * and no lender may charge above it, so it also bounds our estimate of what
+ * the client pays now.
  */
 export const NCA_MORTGAGE_CAP_HUNDREDTHS = 200
 
@@ -126,6 +128,22 @@ export function insurIqRateForType(
     : insurIqRateHundredths(currentRateHundredths)
 }
 
+/**
+ * The rate we assume the client pays now, by credit type. A provider's book
+ * rate is for its unsecured lending; on a home loan the NCA cap is the legal
+ * maximum, so estimating above it would overstate the saving. A client who
+ * really pays more (e.g. cover priced on the original bond) can enter their
+ * own premium, which replaces this estimate.
+ */
+export function currentRateForType(
+  providerRateHundredths: number,
+  creditType: CreditType,
+): number {
+  return creditType === 'home-loan'
+    ? Math.min(providerRateHundredths, NCA_MORTGAGE_CAP_HUNDREDTHS)
+    : providerRateHundredths
+}
+
 /** Monthly premium in cents for a balance in rands at a rate in hundredths. */
 export function monthlyPremiumCents(balanceRand: number, rateHundredths: number): number {
   return Math.round((balanceRand * rateHundredths) / 1000)
@@ -153,7 +171,10 @@ export function calculateSavings(
       throw new Error(`No rate resolved for provider: ${account.provider}`)
     }
     const newRateHundredths = insurIqRateForType(currentRateHundredths, account.creditType)
-    const estimatedCents = monthlyPremiumCents(account.balance, currentRateHundredths)
+    const estimatedCents = monthlyPremiumCents(
+      account.balance,
+      currentRateForType(currentRateHundredths, account.creditType),
+    )
     const rawNewMonthlyCents = monthlyPremiumCents(account.balance, newRateHundredths)
 
     // "What do you pay now?" — the client's own figure beats our estimate.

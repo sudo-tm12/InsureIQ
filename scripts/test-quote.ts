@@ -79,26 +79,46 @@ test('ACCEPTANCE — spec §3.1 worked example (illustrative rate), R100,000', (
   assert.equal(quote.summary.totalBalanceCents, 10_000_000)
 })
 
-test('home-loan row uses the mortgage cap and never quotes worse off', () => {
+test('home-loan estimate never exceeds the NCA mortgage cap (no inflated saving)', () => {
   const quote = calculateSavings(
     [
       { provider: 'Bond Provider', balance: 500_000, creditType: 'home-loan' },
       { provider: 'Cheap Provider', balance: 50_000, creditType: 'personal-loan' },
     ],
     [
-      { provider: 'Bond Provider', rateHundredths: 340 }, // overcharging above the cap
+      { provider: 'Bond Provider', rateHundredths: 340 }, // book rate above the cap
       { provider: 'Cheap Provider', rateHundredths: 230 }, // R2.30 — at/below our floor
     ],
   )
   const [bond, cheap] = quote.rows
-  // Bond: 500 000 ÷ 1000 × 2.00 = R1 000 vs 3.40 = R1 700 → saves R700/mo
-  assert.equal(bond.currentMonthlyCents, 170_000)
+  // Bond: estimated at the legal maximum 500 000 ÷ 1000 × 2.00 = R1 000,
+  // not the R1 700 the book rate implies — and we can't beat the cap.
+  assert.equal(bond.currentMonthlyCents, 100_000)
   assert.equal(bond.newMonthlyCents, 100_000)
-  assert.equal(bond.savingMonthlyCents, 70_000)
+  assert.equal(bond.savingMonthlyCents, 0)
+  assert.equal(bond.alreadyBestRate, true)
+  // A book rate already under the cap is kept as is.
+  const low = calculateSavings(
+    [{ provider: 'Low Bond', balance: 500_000, creditType: 'home-loan' }],
+    [{ provider: 'Low Bond', rateHundredths: 150 }],
+  )
+  assert.equal(low.rows[0].currentMonthlyCents, 75_000)
+  assert.equal(low.rows[0].savingMonthlyCents, 0)
   // Cheap: no-savings guard — identical premiums
   assert.equal(cheap.alreadyBestRate, true)
   assert.equal(cheap.newMonthlyCents, cheap.currentMonthlyCents)
   assert.equal(cheap.savingMonthlyCents, 0)
+})
+
+test('home loan: a real premium above the cap (e.g. priced on the original bond) shows the saving', () => {
+  const quote = calculateSavings(
+    [{ provider: 'Bond Provider', balance: 500_000, creditType: 'home-loan', currentPremiumCents: 150_000 }],
+    [{ provider: 'Bond Provider', rateHundredths: 340 }],
+  )
+  const [bond] = quote.rows
+  assert.equal(bond.isOwnFigure, true)
+  assert.equal(bond.newMonthlyCents, 100_000)
+  assert.equal(bond.savingMonthlyCents, 50_000)
 })
 
 test('multi-account totals and annual saving × 12', () => {

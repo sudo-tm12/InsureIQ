@@ -513,7 +513,9 @@ export function SavingsCalculator() {
                       />
                     </div>
                     <p className="text-[11px] text-brand-muted font-body mt-1.5">
-                      From your statement. Leave blank and we&apos;ll estimate it for you.
+                      {row.creditType === 'home-loan'
+                        ? 'Home-loan cover is capped by law at R2.00 per R1,000. Enter your premium from your statement to see if you pay more than that.'
+                        : "From your statement. Leave blank and we'll estimate it for you."}
                     </p>
                   </div>
                 </div>
