@@ -11,6 +11,15 @@ import { CTABanner } from '@/components/sections/CTABanner'
 
 export const revalidate = 60
 
+// This page's own openGraph/twitter objects replace the inherited ones, so
+// the generated share image (src/app/opengraph-image.tsx) is named here.
+const SHARE_IMAGE = {
+  url: '/opengraph-image',
+  width: 1200,
+  height: 630,
+  alt: `${SITE.name} — ${SITE.tagline}`,
+}
+
 export const metadata: Metadata = {
   alternates: { canonical: '/' },
   title: { absolute: 'InsurIQ — Intelligent Insurance Solutions' },
@@ -24,12 +33,14 @@ export const metadata: Metadata = {
     title: 'InsurIQ — Intelligent Insurance Solutions',
     description:
       'Affordable, transparent credit life insurance for South Africans. FSCA licensed. Get your quote in 60 seconds.',
+    images: [SHARE_IMAGE],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'InsurIQ — Intelligent Insurance Solutions',
     description:
       'Affordable, transparent credit life insurance for South Africans. FSCA licensed. Get your quote in 60 seconds.',
+    images: [SHARE_IMAGE],
   },
 }
 
