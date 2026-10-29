@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { connection } from "next/server";
 import { Syne, DM_Sans } from "next/font/google";
 import { SITE } from "@/lib/constants";
 import "./globals.css";
@@ -72,11 +73,16 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Render every page per request so Next.js can stamp this request's CSP
+  // nonce (set in src/proxy.ts) on its scripts. Static HTML would carry no
+  // nonce, and the CSP would then block the app from hydrating.
+  await connection();
+
   return (
     <html lang="en-ZA" className={`${syne.variable} ${dmSans.variable}`}>
       <body className="font-body antialiased bg-white text-brand-body">
