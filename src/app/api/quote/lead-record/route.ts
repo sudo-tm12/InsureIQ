@@ -8,6 +8,20 @@ import { escapeHtml, formatCents } from '@/lib/utils'
 export const runtime = 'nodejs'
 
 /**
+ * This page shows a full SA ID number. It runs no script, loads nothing
+ * external, can't be framed, never sends its tokened URL as a referrer and
+ * is never cached or indexed.
+ */
+const RECORD_HEADERS = {
+  'Content-Type': 'text/html; charset=utf-8',
+  'Cache-Control': 'no-store',
+  'Content-Security-Policy':
+    "default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+  'Referrer-Policy': 'no-referrer',
+  'X-Robots-Tag': 'noindex, nofollow',
+}
+
+/**
  * Signed, expiring view of a stored lead (24h). Linked from the leads-inbox
  * notification so consultants can see the full ID number without it ever
  * travelling through email.
@@ -18,7 +32,7 @@ export async function GET(request: Request): Promise<NextResponse> {
   if (!leadId) {
     return new NextResponse(html('Link expired or invalid', 'This lead record link has expired. Ask the system for a fresh notification.'), {
       status: 404,
-      headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' },
+      headers: RECORD_HEADERS,
     })
   }
 
@@ -27,12 +41,12 @@ export async function GET(request: Request): Promise<NextResponse> {
   if (!lead || lead.kind !== 'quote') {
     return new NextResponse(html('Lead not found', 'No lead exists for this link.'), {
       status: 404,
-      headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' },
+      headers: RECORD_HEADERS,
     })
   }
 
   return new NextResponse(html('Lead record', leadBody(lead)), {
-    headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' },
+    headers: RECORD_HEADERS,
   })
 }
 

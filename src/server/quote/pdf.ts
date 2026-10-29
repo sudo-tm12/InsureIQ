@@ -9,6 +9,7 @@ import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from 'pdf
 import type { QuoteResult } from '@/lib/quote/savings'
 import { creditTypeLabel } from '@/lib/quote/savings'
 import { formatCents } from '@/lib/utils'
+import { maskIdNumber } from '@/lib/validations'
 import { FSP_LABEL, REGULATORY, SITE } from '@/lib/constants'
 
 export interface QuotePdfInput {
@@ -122,7 +123,9 @@ export async function generateQuotePdf(input: QuotePdfInput): Promise<Uint8Array
   drawText(page, 'Prepared for', PAGE_MARGIN, y, 8.5, regular, MUTED)
   drawText(page, `${input.firstName} ${input.lastName}`, PAGE_MARGIN, y - 15, 13, bold, INK)
   drawText(page, 'ID Number', PAGE_MARGIN + 250, y, 8.5, regular, MUTED)
-  drawText(page, input.idNumber, PAGE_MARGIN + 250, y - 15, 13, bold, INK)
+  // Masked: the PDF travels by email and is forwarded and stored outside our
+  // control. The full number stays in the encrypted lead record.
+  drawText(page, maskIdNumber(input.idNumber), PAGE_MARGIN + 250, y - 15, 13, bold, INK)
 
   /* ── Savings summary (the two highlighted figures from the Report) ── */
   y -= 52
