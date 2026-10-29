@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { newsletterSchema } from '@/lib/validations'
-import { getClientIp, rateLimit } from '@/server/http/rate-limit'
+import { rateLimitPersistent } from '@/server/http/rate-limit'
+import { readJsonPost } from '@/server/http/json-post'
 import { CONSENT_POLICY_VERSION, storeLead, type NewsletterLead } from '@/server/leads/store'
 import { sendNewsletterSignupEmail } from '@/server/leads/notifications'
 
@@ -12,7 +13,11 @@ export const runtime = 'nodejs'
  * leads inbox so the team can add it to the mailing list. No PII is logged.
  */
 export async function POST(request: Request): Promise<NextResponse> {
-  const limit = rateLimit(`newsletter:${getClientIp(request)}`, 5, 60 * 60_000)
+  const input = await readJsonPost(request)
+  if (!input.ok) return input.response
+  const body = input.body
+
+  const limit = await rateLimitPersistent('newsletter', request, 5, 60 * 60_000)
   if (!limit.ok) {
     return NextResponse.json(
       { error: 'Too many requests. Please try again later.' },
@@ -20,12 +25,6 @@ export async function POST(request: Request): Promise<NextResponse> {
     )
   }
 
-  let body: unknown
-  try {
-    body = await request.json()
-  } catch {
-    return NextResponse.json({ error: 'Invalid request body.' }, { status: 400 })
-  }
 
   const parsed = newsletterSchema.safeParse(body)
   if (!parsed.success) {

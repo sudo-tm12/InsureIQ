@@ -9,3 +9,11 @@ CREATE TABLE IF NOT EXISTS leads (
 );
 
 CREATE INDEX IF NOT EXISTS leads_created_at_idx ON leads (created_at);
+
+-- Shared rate-limit counters for the lead endpoints. key = scope + HMAC of the
+-- client IP (the raw IP is never stored).
+CREATE TABLE IF NOT EXISTS rate_limits (
+  key TEXT PRIMARY KEY,
+  count INTEGER NOT NULL,
+  reset_at TIMESTAMPTZ NOT NULL
+);

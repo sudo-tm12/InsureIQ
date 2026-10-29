@@ -13,7 +13,8 @@ import { Accordion, type AccordionItem } from '@/components/ui/Accordion'
 import { ProductLayout } from '@/components/layout/ProductLayout'
 
 export const metadata: Metadata = {
-  title: 'Financial Advisory | InsurIQ — FAIS Licensed',
+  alternates: { canonical: '/products/financial-advisory' },
+  title: 'Financial Advisory | FAIS Licensed',
   description:
     'FSCA-licensed financial advisory services in South Africa. Honest, transparent advice on insurance and financial planning. No hidden commissions.',
 }

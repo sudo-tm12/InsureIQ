@@ -1,12 +1,13 @@
 /**
  * Neon / Vercel Postgres lead store (server-only).
  *
- * Requires DATABASE_URL (Neon connection string). The table is created by
- * scripts/leads/schema.sql (run `npm run leads:migrate`). Only the sealed
- * ciphertext is stored — the database never sees PII in the clear.
+ * Requires DATABASE_URL (Neon connection string). The table is created on
+ * first use (idempotent), so a fresh database needs no manual migration;
+ * `npm run leads:migrate` applies the same schema ahead of time. Only the
+ * sealed ciphertext is stored — the database never sees PII in the clear.
  */
 import { randomUUID } from 'node:crypto'
-import { neon } from '@neondatabase/serverless'
+import { sql, type Sql } from '@/server/db'
 import {
   retentionMonths,
   seal,
@@ -15,16 +16,32 @@ import {
   type StoredLead,
 } from './store'
 
-function sql() {
-  const url = process.env.DATABASE_URL?.trim()
-  if (!url) throw new Error('DATABASE_URL is not configured')
-  return neon(url)
+// Once per server instance. Keep in sync with scripts/leads/schema.sql.
+let schemaReady: Promise<void> | null = null
+
+function ensureSchema(db: Sql): Promise<void> {
+  schemaReady ??= (async () => {
+    await db`
+      CREATE TABLE IF NOT EXISTS leads (
+        id UUID PRIMARY KEY,
+        created_at TIMESTAMPTZ NOT NULL,
+        sealed TEXT NOT NULL
+      )
+    `
+    await db`CREATE INDEX IF NOT EXISTS leads_created_at_idx ON leads (created_at)`
+  })().catch((error: unknown) => {
+    // Let the next request retry rather than caching a failure.
+    schemaReady = null
+    throw error
+  })
+  return schemaReady
 }
 
 export async function storeLeadInPostgres(
   payload: LeadPayload,
 ): Promise<{ id: string; createdAt: string }> {
   const db = sql()
+  await ensureSchema(db)
   const record: StoredLead = {
     id: randomUUID(),
     createdAt: new Date().toISOString(),
@@ -44,6 +61,7 @@ export async function storeLeadInPostgres(
 
 export async function readLeadFromPostgres(id: string): Promise<LeadPayload | null> {
   const db = sql()
+  await ensureSchema(db)
   const rows = await db`SELECT sealed FROM leads WHERE id = ${id}`
   if (rows.length === 0) return null
   return unseal((rows[0] as { sealed: string }).sealed)

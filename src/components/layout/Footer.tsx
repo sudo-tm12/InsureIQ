@@ -232,11 +232,17 @@ export function Footer() {
         </div>
 
         {/* Regulatory strip */}
-        <div className="border-t border-white/10 py-8 space-y-2 text-[11px] text-white/40 text-center md:text-left">
+        {/* Mobile: extra bottom space so the fixed WhatsApp button (bottom-24,
+            56px tall) never covers the regulatory text at the end of the page */}
+        <div className="border-t border-white/10 pt-8 pb-40 md:pb-8 space-y-2 text-[11px] text-white/40 text-center md:text-left">
           <p className="leading-relaxed">
             {REGULATORY.registeredName} is an Authorised Financial Services
-            Provider. FSP No:{' '}
-            <span className="text-white/60">{REGULATORY.fspNumber}</span>.
+            Provider.
+            {REGULATORY.fspNumber && (
+              <>
+                {' '}FSP No: <span className="text-white/60">{REGULATORY.fspNumber}</span>.
+              </>
+            )}
           </p>
           <p className="leading-relaxed">
             Registered in South Africa. POPIA Compliance Officer:{' '}

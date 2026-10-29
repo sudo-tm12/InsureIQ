@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server'
 import { quoteLeadSchema } from '@/lib/validations'
 import { calculateSavings } from '@/lib/quote/savings'
 import { resolveRates, RateBookError } from '@/server/ratebook'
-import { getClientIp, rateLimit } from '@/server/http/rate-limit'
+import { rateLimitPersistent } from '@/server/http/rate-limit'
+import { readJsonPost } from '@/server/http/json-post'
 import { CONSENT_POLICY_VERSION, storeLead } from '@/server/leads/store'
 import { signLeadRecordToken } from '@/server/leads/token'
 import { generateQuotePdf } from '@/server/quote/pdf'
@@ -15,7 +16,11 @@ export const runtime = 'nodejs'
  * quote, store the lead encrypted, and email both copies.
  */
 export async function POST(request: Request): Promise<NextResponse> {
-  const limit = rateLimit(`send:${getClientIp(request)}`, 5, 60 * 60_000)
+  const input = await readJsonPost(request)
+  if (!input.ok) return input.response
+  const body = input.body
+
+  const limit = await rateLimitPersistent('send', request, 5, 60 * 60_000)
   if (!limit.ok) {
     return NextResponse.json(
       { error: 'Too many requests. Please try again later.' },
@@ -23,12 +28,6 @@ export async function POST(request: Request): Promise<NextResponse> {
     )
   }
 
-  let body: unknown
-  try {
-    body = await request.json()
-  } catch {
-    return NextResponse.json({ error: 'Invalid request body.' }, { status: 400 })
-  }
 
   const parsed = quoteLeadSchema.safeParse(body)
   if (!parsed.success) {

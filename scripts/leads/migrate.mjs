@@ -27,13 +27,19 @@ if (!url) {
 
 const sql = neon(url)
 const schema = readFileSync(path.join(process.cwd(), 'scripts', 'leads', 'schema.sql'), 'utf-8')
+// Strip comment lines first: filtering whole statements that start with `--`
+// dropped CREATE TABLE, which sits under the file's header comment.
 const statements = schema
+  .split('\n')
+  .filter((line) => !line.trim().startsWith('--'))
+  .join('\n')
   .split(';')
   .map((statement) => statement.trim())
-  .filter((statement) => statement.length > 0 && !statement.startsWith('--'))
+  .filter((statement) => statement.length > 0)
 
 for (const statement of statements) {
-  await sql(statement)
+  // @neondatabase/serverless v1: plain sql(text) calls throw; use sql.query.
+  await sql.query(statement)
   console.log('applied:', statement.split('\n')[0])
 }
 console.log('Lead store schema is up to date.')

@@ -30,6 +30,8 @@ import { generateQuotePdf } from '../src/server/quote/pdf'
 import { sendLeadNotificationEmail } from '../src/server/quote/email'
 import { sendEnquiryNotificationEmail } from '../src/server/leads/notifications'
 import { seal, unseal, type LeadPayload } from '../src/server/leads/store'
+import { readJsonPost } from '../src/server/http/json-post'
+import { rateLimitPersistent } from '../src/server/http/rate-limit'
 
 // Load .env.local so the rate-book key is available (dev convenience only).
 try {
@@ -79,26 +81,46 @@ test('ACCEPTANCE — spec §3.1 worked example (illustrative rate), R100,000', (
   assert.equal(quote.summary.totalBalanceCents, 10_000_000)
 })
 
-test('home-loan row uses the mortgage cap and never quotes worse off', () => {
+test('home-loan estimate never exceeds the NCA mortgage cap (no inflated saving)', () => {
   const quote = calculateSavings(
     [
       { provider: 'Bond Provider', balance: 500_000, creditType: 'home-loan' },
       { provider: 'Cheap Provider', balance: 50_000, creditType: 'personal-loan' },
     ],
     [
-      { provider: 'Bond Provider', rateHundredths: 340 }, // overcharging above the cap
+      { provider: 'Bond Provider', rateHundredths: 340 }, // book rate above the cap
       { provider: 'Cheap Provider', rateHundredths: 230 }, // R2.30 — at/below our floor
     ],
   )
   const [bond, cheap] = quote.rows
-  // Bond: 500 000 ÷ 1000 × 2.00 = R1 000 vs 3.40 = R1 700 → saves R700/mo
-  assert.equal(bond.currentMonthlyCents, 170_000)
+  // Bond: estimated at the legal maximum 500 000 ÷ 1000 × 2.00 = R1 000,
+  // not the R1 700 the book rate implies — and we can't beat the cap.
+  assert.equal(bond.currentMonthlyCents, 100_000)
   assert.equal(bond.newMonthlyCents, 100_000)
-  assert.equal(bond.savingMonthlyCents, 70_000)
+  assert.equal(bond.savingMonthlyCents, 0)
+  assert.equal(bond.alreadyBestRate, true)
+  // A book rate already under the cap is kept as is.
+  const low = calculateSavings(
+    [{ provider: 'Low Bond', balance: 500_000, creditType: 'home-loan' }],
+    [{ provider: 'Low Bond', rateHundredths: 150 }],
+  )
+  assert.equal(low.rows[0].currentMonthlyCents, 75_000)
+  assert.equal(low.rows[0].savingMonthlyCents, 0)
   // Cheap: no-savings guard — identical premiums
   assert.equal(cheap.alreadyBestRate, true)
   assert.equal(cheap.newMonthlyCents, cheap.currentMonthlyCents)
   assert.equal(cheap.savingMonthlyCents, 0)
+})
+
+test('home loan: a real premium above the cap (e.g. priced on the original bond) shows the saving', () => {
+  const quote = calculateSavings(
+    [{ provider: 'Bond Provider', balance: 500_000, creditType: 'home-loan', currentPremiumCents: 150_000 }],
+    [{ provider: 'Bond Provider', rateHundredths: 340 }],
+  )
+  const [bond] = quote.rows
+  assert.equal(bond.isOwnFigure, true)
+  assert.equal(bond.newMonthlyCents, 100_000)
+  assert.equal(bond.savingMonthlyCents, 50_000)
 })
 
 test('multi-account totals and annual saving × 12', () => {
@@ -346,4 +368,49 @@ test('lead store: records sealed before `kind` existed read back as quote leads'
     }),
   )
   assert.equal(newsletter.kind, 'newsletter')
+})
+
+test('POST guard: only same-origin JSON within the size cap is accepted', async () => {
+  const url = 'https://www.insuriq.co.za/api/leads'
+  const post = (headers: Record<string, string>, body = '{"ok":true}') =>
+    readJsonPost(new Request(url, { method: 'POST', headers, body }))
+  const json = { 'content-type': 'application/json' }
+
+  const ok = await post({ ...json, 'sec-fetch-site': 'same-origin' })
+  assert.equal(ok.ok, true)
+  if (ok.ok) assert.deepEqual(ok.body, { ok: true })
+  // Older browsers without Sec-Fetch-Site: matching Origin is accepted.
+  assert.equal((await post({ ...json, origin: 'https://www.insuriq.co.za' })).ok, true)
+
+  const status = async (headers: Record<string, string>, body?: string) => {
+    const result = await post(headers, body)
+    return result.ok ? 200 : result.response.status
+  }
+  // Another website posting from a visitor's browser
+  assert.equal(await status({ ...json, 'sec-fetch-site': 'cross-site' }), 403)
+  assert.equal(await status({ ...json, origin: 'https://evil.example' }), 403)
+  // No browser provenance at all (scripts, curl)
+  assert.equal(await status(json), 403)
+  // text/plain needs no CORS preflight, so it must be refused outright
+  assert.equal(await status({ 'content-type': 'text/plain', 'sec-fetch-site': 'same-origin' }), 415)
+  // Oversized and malformed bodies
+  assert.equal(await status({ ...json, 'sec-fetch-site': 'same-origin' }, 'x'.repeat(40_000)), 413)
+  assert.equal(await status({ ...json, 'sec-fetch-site': 'same-origin' }, '{not json'), 400)
+})
+
+test('lead rate limit: 5 per window per client, falls back to memory without a database', async () => {
+  const realUrl = process.env.DATABASE_URL
+  delete process.env.DATABASE_URL // never touch the real database from tests
+  try {
+    const from = (ip: string) => new Request('https://www.insuriq.co.za/api/leads', { headers: { 'x-forwarded-for': ip } })
+    for (let i = 0; i < 5; i++) assert.equal((await rateLimitPersistent('test', from('203.0.113.7'), 5, 60_000)).ok, true)
+    const blocked = await rateLimitPersistent('test', from('203.0.113.7'), 5, 60_000)
+    assert.equal(blocked.ok, false)
+    assert.ok(blocked.retryAfterSeconds > 0)
+    // Other clients and other endpoints keep their own quota.
+    assert.equal((await rateLimitPersistent('test', from('203.0.113.8'), 5, 60_000)).ok, true)
+    assert.equal((await rateLimitPersistent('other', from('203.0.113.7'), 5, 60_000)).ok, true)
+  } finally {
+    if (realUrl !== undefined) process.env.DATABASE_URL = realUrl
+  }
 })

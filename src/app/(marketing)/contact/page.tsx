@@ -2,10 +2,11 @@ import type { Metadata } from 'next'
 import { Mail, MessageCircle, ShieldCheck, LockKeyhole } from 'lucide-react'
 import { Container } from '@/components/ui/Container'
 import { ContactForm } from '@/components/forms/ContactForm'
-import { REGULATORY, CONTACT, WHATSAPP_URL } from '@/lib/constants'
+import { CONTACT, FSP_LABEL, WHATSAPP_URL } from '@/lib/constants'
 
 export const metadata: Metadata = {
-  title: 'Contact InsurIQ | Get Your Free Quote',
+  alternates: { canonical: '/contact' },
+  title: 'Contact Us | Get Your Free Quote',
   description:
     'Get in touch with InsurIQ for a free credit life insurance quote. FSCA licensed. Response within one business day.',
 }
@@ -14,7 +15,7 @@ const CONTACT_ITEMS = [
   {
     icon: MessageCircle,
     label: 'WhatsApp',
-    value: 'Chat with us directly',
+    value: CONTACT.whatsappDisplay,
     href: WHATSAPP_URL,
     external: true,
   },
@@ -28,7 +29,7 @@ const CONTACT_ITEMS = [
   {
     icon: ShieldCheck,
     label: 'FSCA Licensed FSP',
-    value: `FSP No: ${REGULATORY.fspNumber}`,
+    value: FSP_LABEL ?? 'Licensed under FAIS',
     description: 'Authorised Financial Services Provider',
     href: null,
     external: false,

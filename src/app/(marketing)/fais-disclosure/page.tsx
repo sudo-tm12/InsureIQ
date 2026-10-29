@@ -4,7 +4,8 @@ import { LegalLayout } from '@/components/layout/LegalLayout'
 import { REGULATORY, CONTACT } from '@/lib/constants'
 
 export const metadata: Metadata = {
-  title: 'FAIS Disclosure | InsurIQ',
+  alternates: { canonical: '/fais-disclosure' },
+  title: 'FAIS Disclosure',
   description:
     'InsurIQ FAIS Disclosure — FSP details, services authorised, conflict of interest policy, and complaints procedure as required by the Financial Advisory and Intermediary Services Act.',
 }
@@ -26,9 +27,11 @@ export default function FaisDisclosurePage() {
         <li>
           <strong>Trading name:</strong> InsurIQ
         </li>
-        <li>
-          <strong>FSP licence number:</strong> {REGULATORY.fspNumber}
-        </li>
+        {REGULATORY.fspNumber && (
+          <li>
+            <strong>FSP licence number:</strong> {REGULATORY.fspNumber}
+          </li>
+        )}
         <li>
           <strong>Registered office:</strong> {REGULATORY.registeredOffice}
         </li>
@@ -90,8 +93,9 @@ export default function FaisDisclosurePage() {
       </ul>
       <p>
         Where a conflict of interest exists, it will be disclosed to you in writing before any
-        advice is given or any transaction is concluded. Our full Conflict of Interest Management
-        Policy is available on request from{' '}
+        advice is given or any transaction is concluded. Read our full{' '}
+        <Link href="/conflict-of-interest">Conflict of Interest Policy</Link>, or request a copy
+        from{' '}
         <a href={`mailto:${REGULATORY.complianceOfficerEmail}`}>
           {REGULATORY.complianceOfficerEmail}
         </a>

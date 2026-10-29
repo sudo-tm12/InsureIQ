@@ -5,7 +5,8 @@ import { Accordion, type AccordionItem } from '@/components/ui/Accordion'
 import { CTABanner } from '@/components/sections/CTABanner'
 
 export const metadata: Metadata = {
-  title: 'How InsurIQ Works | Quote to Covered in Minutes',
+  alternates: { canonical: '/how-it-works' },
+  title: 'How It Works | Quote to Covered in Minutes',
   description:
     'See exactly how InsurIQ works — four simple steps from quote to active cover. FSCA licensed. No paperwork. Under 5 minutes.',
 }

@@ -73,8 +73,9 @@ export async function generateMetadata({ params }: ArticlePageProps): Promise<Me
       })
       if (post) {
         return {
-          title: `${post.seo?.metaTitle ?? post.title} | InsurIQ`,
+          title: post.seo?.metaTitle ?? post.title,
           description: post.seo?.metaDescription ?? post.excerpt,
+          alternates: { canonical: `/blog/${slug}` },
         }
       }
     } catch {
@@ -82,8 +83,8 @@ export async function generateMetadata({ params }: ArticlePageProps): Promise<Me
     }
   }
   const mock = getPostBySlug(slug)
-  if (!mock) return { title: 'Article Not Found | InsurIQ' }
-  return { title: `${mock.title} | InsurIQ`, description: mock.excerpt }
+  if (!mock) return { title: 'Article Not Found' }
+  return { title: mock.title, description: mock.excerpt, alternates: { canonical: `/blog/${slug}` } }
 }
 
 export default async function ArticlePage({ params }: ArticlePageProps) {

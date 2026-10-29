@@ -9,7 +9,8 @@ import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from 'pdf
 import type { QuoteResult } from '@/lib/quote/savings'
 import { creditTypeLabel } from '@/lib/quote/savings'
 import { formatCents } from '@/lib/utils'
-import { REGULATORY, SITE } from '@/lib/constants'
+import { maskIdNumber } from '@/lib/validations'
+import { FSP_LABEL, REGULATORY, SITE } from '@/lib/constants'
 
 export interface QuotePdfInput {
   firstName: string
@@ -110,6 +111,8 @@ export async function generateQuotePdf(input: QuotePdfInput): Promise<Uint8Array
     const width = (image.width / image.height) * height
     page.drawImage(image, { x: PAGE_MARGIN, y: PAGE_H - 66, width, height })
   } catch {
+    // Visible in runtime logs so a missing logo can't go unnoticed again.
+    console.warn('Quote PDF: logo file unavailable, using text wordmark')
     drawText(page, 'InsurIQ', PAGE_MARGIN, PAGE_H - 56, 22, bold, WHITE)
   }
   drawText(page, 'Credit Life Savings Quote', PAGE_W - PAGE_MARGIN - 220, PAGE_H - 52, 15, bold, WHITE)
@@ -120,7 +123,9 @@ export async function generateQuotePdf(input: QuotePdfInput): Promise<Uint8Array
   drawText(page, 'Prepared for', PAGE_MARGIN, y, 8.5, regular, MUTED)
   drawText(page, `${input.firstName} ${input.lastName}`, PAGE_MARGIN, y - 15, 13, bold, INK)
   drawText(page, 'ID Number', PAGE_MARGIN + 250, y, 8.5, regular, MUTED)
-  drawText(page, input.idNumber, PAGE_MARGIN + 250, y - 15, 13, bold, INK)
+  // Masked: the PDF travels by email and is forwarded and stored outside our
+  // control. The full number stays in the encrypted lead record.
+  drawText(page, maskIdNumber(input.idNumber), PAGE_MARGIN + 250, y - 15, 13, bold, INK)
 
   /* ── Savings summary (the two highlighted figures from the Report) ── */
   y -= 52
@@ -222,7 +227,13 @@ export async function generateQuotePdf(input: QuotePdfInput): Promise<Uint8Array
   })
   drawText(
     page,
-    `${SITE.name} is an Authorised Financial Services Provider · ${REGULATORY.fspNumber} · © ${new Date().getFullYear()} ${SITE.name}`,
+    [
+      `${SITE.name} is an Authorised Financial Services Provider`,
+      FSP_LABEL,
+      `© ${new Date().getFullYear()} ${SITE.name}`,
+    ]
+      .filter(Boolean)
+      .join(' · '),
     PAGE_MARGIN,
     footerY + 24,
     7.5,

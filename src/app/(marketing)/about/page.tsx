@@ -1,11 +1,12 @@
 import type { Metadata } from 'next'
 import { Eye, TrendingDown, BadgeCheck, ShieldCheck, FileText, AlertTriangle } from 'lucide-react'
 import { Container } from '@/components/ui/Container'
-import { REGULATORY, LEGAL_LINKS } from '@/lib/constants'
+import { FSP_LABEL, REGULATORY, LEGAL_LINKS } from '@/lib/constants'
 import Link from 'next/link'
 
 export const metadata: Metadata = {
-  title: 'About InsurIQ | Our Story & Mission',
+  alternates: { canonical: '/about' },
+  title: 'About Us | Our Story & Mission',
   description:
     'InsurIQ was built to fix what\'s broken in credit life insurance. Learn about our mission to bring affordable, transparent cover to South Africans.',
 }
@@ -32,7 +33,7 @@ const CREDENTIALS = [
   {
     icon: ShieldCheck,
     title: 'FSCA Authorised',
-    body: `${REGULATORY.registeredName} is an Authorised Financial Services Provider operating under the Financial Advisory and Intermediary Services Act (FAIS). FSP No: ${REGULATORY.fspNumber}.`,
+    body: `${REGULATORY.registeredName} is an Authorised Financial Services Provider operating under the Financial Advisory and Intermediary Services Act (FAIS).${FSP_LABEL ? ` ${FSP_LABEL}.` : ''}`,
   },
   {
     icon: FileText,

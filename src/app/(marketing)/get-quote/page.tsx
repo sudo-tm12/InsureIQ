@@ -4,7 +4,8 @@ import { Container } from '@/components/ui/Container'
 import { SavingsCalculator } from '@/components/forms/SavingsCalculator'
 
 export const metadata: Metadata = {
-  title: 'Get a Quote | InsurIQ',
+  alternates: { canonical: '/get-quote' },
+  title: 'Get a Quote',
   description:
     'See how much you could save on credit life insurance. Instant estimate. No commitment. FSCA licensed.',
 }

@@ -513,7 +513,9 @@ export function SavingsCalculator() {
                       />
                     </div>
                     <p className="text-[11px] text-brand-muted font-body mt-1.5">
-                      From your statement. Leave blank and we&apos;ll estimate it for you.
+                      {row.creditType === 'home-loan'
+                        ? 'Home-loan cover is capped by law at R2.00 per R1,000. Enter your premium from your statement to see if you pay more than that.'
+                        : "From your statement. Leave blank and we'll estimate it for you."}
                     </p>
                   </div>
                 </div>
@@ -643,12 +645,13 @@ export function SavingsCalculator() {
 
           {/* Savings highlight (mirrors the Report summary) */}
           <div className="bg-brand-navy rounded-xl p-5 mb-4">
-            <div className="flex items-center justify-between">
-              <div>
+            {/* Wraps below the amount on narrow screens instead of overlapping it */}
+            <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
+              <div className="min-w-0">
                 <p className="text-white/60 text-xs font-body uppercase tracking-wider mb-1">
                   Total savings per month
                 </p>
-                <p className="font-display font-bold text-white text-3xl leading-none">
+                <p className="font-display font-bold text-white text-2xl sm:text-3xl leading-none whitespace-nowrap">
                   {formatCents(quote.summary.savingMonthlyCents)}
                 </p>
                 <p className="text-white/60 text-sm font-body mt-1">
@@ -656,7 +659,7 @@ export function SavingsCalculator() {
                 </p>
               </div>
               {savingPercent > 0 && (
-                <div className="text-right">
+                <div className="sm:text-right">
                   <p className="font-display font-bold text-brand-cyan text-3xl leading-none">
                     {savingPercent}%
                   </p>
