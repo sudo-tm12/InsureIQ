@@ -3,7 +3,7 @@ import { LegalLayout } from '@/components/layout/LegalLayout'
 import { REGULATORY, CONTACT } from '@/lib/constants'
 
 export const metadata: Metadata = {
-  title: 'Terms & Conditions | InsurIQ',
+  title: 'Terms & Conditions',
   description: 'InsurIQ Terms & Conditions governing use of our website and services.',
 }
 

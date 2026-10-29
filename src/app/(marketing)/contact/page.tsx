@@ -5,7 +5,7 @@ import { ContactForm } from '@/components/forms/ContactForm'
 import { CONTACT, FSP_LABEL, WHATSAPP_URL } from '@/lib/constants'
 
 export const metadata: Metadata = {
-  title: 'Contact InsurIQ | Get Your Free Quote',
+  title: 'Contact Us | Get Your Free Quote',
   description:
     'Get in touch with InsurIQ for a free credit life insurance quote. FSCA licensed. Response within one business day.',
 }

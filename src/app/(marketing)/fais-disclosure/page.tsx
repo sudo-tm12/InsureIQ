@@ -4,7 +4,7 @@ import { LegalLayout } from '@/components/layout/LegalLayout'
 import { REGULATORY, CONTACT } from '@/lib/constants'
 
 export const metadata: Metadata = {
-  title: 'FAIS Disclosure | InsurIQ',
+  title: 'FAIS Disclosure',
   description:
     'InsurIQ FAIS Disclosure — FSP details, services authorised, conflict of interest policy, and complaints procedure as required by the Financial Advisory and Intermediary Services Act.',
 }

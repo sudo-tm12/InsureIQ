@@ -5,7 +5,7 @@ import { FSP_LABEL, REGULATORY, LEGAL_LINKS } from '@/lib/constants'
 import Link from 'next/link'
 
 export const metadata: Metadata = {
-  title: 'About InsurIQ | Our Story & Mission',
+  title: 'About Us | Our Story & Mission',
   description:
     'InsurIQ was built to fix what\'s broken in credit life insurance. Learn about our mission to bring affordable, transparent cover to South Africans.',
 }
