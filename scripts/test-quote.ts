@@ -30,6 +30,7 @@ import { generateQuotePdf } from '../src/server/quote/pdf'
 import { sendLeadNotificationEmail } from '../src/server/quote/email'
 import { sendEnquiryNotificationEmail } from '../src/server/leads/notifications'
 import { seal, unseal, type LeadPayload } from '../src/server/leads/store'
+import { readJsonPost } from '../src/server/http/json-post'
 
 // Load .env.local so the rate-book key is available (dev convenience only).
 try {
@@ -366,4 +367,32 @@ test('lead store: records sealed before `kind` existed read back as quote leads'
     }),
   )
   assert.equal(newsletter.kind, 'newsletter')
+})
+
+test('POST guard: only same-origin JSON within the size cap is accepted', async () => {
+  const url = 'https://www.insuriq.co.za/api/leads'
+  const post = (headers: Record<string, string>, body = '{"ok":true}') =>
+    readJsonPost(new Request(url, { method: 'POST', headers, body }))
+  const json = { 'content-type': 'application/json' }
+
+  const ok = await post({ ...json, 'sec-fetch-site': 'same-origin' })
+  assert.equal(ok.ok, true)
+  if (ok.ok) assert.deepEqual(ok.body, { ok: true })
+  // Older browsers without Sec-Fetch-Site: matching Origin is accepted.
+  assert.equal((await post({ ...json, origin: 'https://www.insuriq.co.za' })).ok, true)
+
+  const status = async (headers: Record<string, string>, body?: string) => {
+    const result = await post(headers, body)
+    return result.ok ? 200 : result.response.status
+  }
+  // Another website posting from a visitor's browser
+  assert.equal(await status({ ...json, 'sec-fetch-site': 'cross-site' }), 403)
+  assert.equal(await status({ ...json, origin: 'https://evil.example' }), 403)
+  // No browser provenance at all (scripts, curl)
+  assert.equal(await status(json), 403)
+  // text/plain needs no CORS preflight, so it must be refused outright
+  assert.equal(await status({ 'content-type': 'text/plain', 'sec-fetch-site': 'same-origin' }), 415)
+  // Oversized and malformed bodies
+  assert.equal(await status({ ...json, 'sec-fetch-site': 'same-origin' }, 'x'.repeat(40_000)), 413)
+  assert.equal(await status({ ...json, 'sec-fetch-site': 'same-origin' }, '{not json'), 400)
 })

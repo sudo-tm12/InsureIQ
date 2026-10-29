@@ -3,6 +3,7 @@ import { quoteCalculationSchema } from '@/lib/validations'
 import { calculateSavings } from '@/lib/quote/savings'
 import { resolveRates, RateBookError } from '@/server/ratebook'
 import { getClientIp, rateLimit } from '@/server/http/rate-limit'
+import { readJsonPost } from '@/server/http/json-post'
 
 export const runtime = 'nodejs'
 
@@ -11,6 +12,10 @@ export const runtime = 'nodejs'
  * the response contains Rand amounts only — never rate values.
  */
 export async function POST(request: Request): Promise<NextResponse> {
+  const input = await readJsonPost(request)
+  if (!input.ok) return input.response
+  const body = input.body
+
   const limit = rateLimit(`calculate:${getClientIp(request)}`, 30, 60_000)
   if (!limit.ok) {
     return NextResponse.json(
@@ -19,12 +24,6 @@ export async function POST(request: Request): Promise<NextResponse> {
     )
   }
 
-  let body: unknown
-  try {
-    body = await request.json()
-  } catch {
-    return NextResponse.json({ error: 'Invalid request body.' }, { status: 400 })
-  }
 
   const parsed = quoteCalculationSchema.safeParse(body)
   if (!parsed.success) {
