@@ -29,6 +29,8 @@ export interface LeadNotificationEmailInput {
   consentAt: string
   quote: QuoteResult
   recordUrl: string
+  /** The same PDF the client receives (ID number masked), for the team to keep or forward. */
+  pdf: Uint8Array
 }
 
 function quoteTableRows(quote: QuoteResult): string {
@@ -85,6 +87,10 @@ const FOOTER = `
     <a href="https://www.insuriq.co.za/privacy-policy" style="color:#1A5FBF;">Privacy Policy</a>.
   </p>`
 
+function pdfAttachment(pdf: Uint8Array): { filename: string; content: string } {
+  return { filename: 'InsurIQ-savings-quote.pdf', content: Buffer.from(pdf).toString('base64') }
+}
+
 function yearsLabel(years: number): string {
   return years === 1 ? 'year' : 'years'
 }
@@ -116,12 +122,7 @@ export async function sendClientQuoteEmail(input: ClientQuoteEmailInput): Promis
         <p style="font-size:13px;margin-top:22px;">Your full quote is attached as a PDF. One of our advisors will be in touch to finalise your personalised cover.</p>
         ${FOOTER}
       </div>`,
-    attachments: [
-      {
-        filename: 'InsurIQ-savings-quote.pdf',
-        content: Buffer.from(input.pdf).toString('base64'),
-      },
-    ],
+    attachments: [pdfAttachment(input.pdf)],
   })
 }
 
@@ -148,7 +149,8 @@ export async function sendLeadNotificationEmail(
         <p style="font-size:12px;margin-top:22px;">
           <a href="${escapeHtml(input.recordUrl)}" style="background:#0B2D78;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:bold;">View full lead record</a>
         </p>
-        <p style="font-size:11px;color:#7a8699;">The record link shows the full ID number and expires in 24 hours. Access is granted for POPIA-compliant follow-up only.</p>
+        <p style="font-size:11px;color:#7a8699;">The client's PDF quote is attached (ID number masked). The record link shows the full ID number and expires in 24 hours. Access is granted for POPIA-compliant follow-up only.</p>
       </div>`,
+    attachments: [pdfAttachment(input.pdf)],
   })
 }

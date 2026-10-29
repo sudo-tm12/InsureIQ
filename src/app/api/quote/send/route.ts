@@ -118,6 +118,7 @@ export async function POST(request: Request): Promise<NextResponse> {
         consentAt,
         quote,
         recordUrl,
+        pdf,
       }),
     ])
 
