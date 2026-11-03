@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import Link from 'next/link'
@@ -47,6 +47,20 @@ export function ContactForm() {
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
   const [firstName, setFirstName] = useState('')
   const [messageLength, setMessageLength] = useState(0)
+  const successRef = useRef<HTMLDivElement>(null)
+  const successHeadingRef = useRef<HTMLHeadingElement>(null)
+
+  // The thank-you message is far shorter than the form it replaces, which
+  // left visitors scrolled past it. Bring it into view and focus it.
+  useEffect(() => {
+    if (submitStatus !== 'success') return
+    const box = successRef.current?.getBoundingClientRect()
+    if (box && (box.top < 0 || box.bottom > window.innerHeight)) {
+      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      successRef.current?.scrollIntoView({ block: 'center', behavior: reduceMotion ? 'auto' : 'smooth' })
+    }
+    successHeadingRef.current?.focus({ preventScroll: true })
+  }, [submitStatus])
 
   const {
     register,
@@ -84,11 +98,15 @@ export function ContactForm() {
 
   if (submitStatus === 'success') {
     return (
-      <div className="text-center py-10">
+      <div ref={successRef} className="text-center py-10" role="status">
         <div className="w-20 h-20 rounded-full bg-brand-cyan/10 flex items-center justify-center mx-auto mb-6">
           <CheckCircle2 className="w-10 h-10 text-brand-cyan" aria-hidden="true" />
         </div>
-        <h3 className="font-display font-bold text-2xl text-brand-navy mb-3">
+        <h3
+          ref={successHeadingRef}
+          tabIndex={-1}
+          className="font-display font-bold text-2xl text-brand-navy mb-3 focus:outline-none"
+        >
           Thank you, {firstName}!
         </h3>
         <p className="text-brand-muted font-body leading-relaxed mb-8 max-w-sm mx-auto">

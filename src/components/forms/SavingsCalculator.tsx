@@ -282,6 +282,25 @@ export function SavingsCalculator() {
   const [leadErrors, setLeadErrors] = useState<Record<string, string>>({})
   const [emailSent, setEmailSent] = useState(false)
   const [yearsRemaining, setYearsRemaining] = useState(5)
+  const cardRef = useRef<HTMLDivElement>(null)
+  const sentHeadingRef = useRef<HTMLHeadingElement>(null)
+  const previousPhase = useRef<Phase>(phase)
+
+  // Each step replaces the card's content, and the new step is usually much
+  // shorter or longer than the last, so a visitor who clicked a button at the
+  // bottom would be left looking at the footer. Bring the card's top back
+  // into view, and move focus to the confirmation once the quote is sent.
+  useEffect(() => {
+    if (previousPhase.current === phase) return
+    previousPhase.current = phase
+    if (phase === 'sending') return
+    const card = cardRef.current
+    if (card && card.getBoundingClientRect().top < 0) {
+      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      card.scrollIntoView({ block: 'start', behavior: reduceMotion ? 'auto' : 'smooth' })
+    }
+    if (phase === 'sent') sentHeadingRef.current?.focus({ preventScroll: true })
+  }, [phase])
 
   const updateRow = (id: string, patch: Partial<AccountRow>) =>
     setRows((prev) => prev.map((row) => (row.id === id ? { ...row, ...patch } : row)))
@@ -382,7 +401,12 @@ export function SavingsCalculator() {
   }
 
   return (
-    <div className="bg-white rounded-2xl p-6 lg:p-8" style={{ boxShadow: '0 4px 40px rgba(11,45,120,0.10)' }}>
+    <div
+      ref={cardRef}
+      // scroll-mt clears the fixed navbar when the card is scrolled into view
+      className="bg-white rounded-2xl p-6 lg:p-8 scroll-mt-32"
+      style={{ boxShadow: '0 4px 40px rgba(11,45,120,0.10)' }}
+    >
       <StepProgress step={stepForPhase(phase)} />
 
       {phase === 'input' && (
@@ -896,7 +920,11 @@ export function SavingsCalculator() {
           <div className="w-14 h-14 rounded-full bg-brand-cyan/15 flex items-center justify-center mx-auto mb-4">
             <CheckCircle2 className="w-7 h-7 text-brand-cyan" aria-hidden="true" />
           </div>
-          <h2 className="font-display font-bold text-brand-navy text-2xl mb-2">
+          <h2
+            ref={sentHeadingRef}
+            tabIndex={-1}
+            className="font-display font-bold text-brand-navy text-2xl mb-2 focus:outline-none"
+          >
             {emailSent ? 'Your quote is on its way!' : 'Your details are with us'}
           </h2>
           <p className="text-brand-muted text-[14px] font-body max-w-sm mx-auto mb-6">

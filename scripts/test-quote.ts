@@ -301,10 +301,10 @@ test('PDF quote embeds the logo image (was silently falling back to text)', asyn
 test('lead emails HTML-escape visitor input', async () => {
   const realFetch = globalThis.fetch
   const realKey = process.env.RESEND_API_KEY
-  const bodies: Array<{ html: string }> = []
+  const bodies: Array<{ html: string; attachments?: Array<{ filename: string; content: string }> }> = []
   process.env.RESEND_API_KEY = 'test-key'
   globalThis.fetch = (async (_input: string | URL | Request, init?: RequestInit) => {
-    bodies.push(JSON.parse(String(init?.body)) as { html: string })
+    bodies.push(JSON.parse(String(init?.body)) as (typeof bodies)[number])
     return new Response('{}', { status: 200 })
   }) as typeof fetch
 
@@ -318,6 +318,7 @@ test('lead emails HTML-escape visitor input', async () => {
       consentAt: '2026-10-27T00:00:00.000Z',
       quote: sampleQuote,
       recordUrl: 'https://example.com/api/quote/lead-record?token=a.b.c',
+      pdf: new TextEncoder().encode('%PDF-1.7 test'),
     })
     await sendEnquiryNotificationEmail({
       kind: 'enquiry',
@@ -338,6 +339,10 @@ test('lead emails HTML-escape visitor input', async () => {
   }
 
   assert.equal(bodies.length, 2)
+  // The team notification carries the client's PDF.
+  const [leadAttachment] = bodies[0].attachments ?? []
+  assert.equal(leadAttachment?.filename, 'InsurIQ-savings-quote.pdf')
+  assert.equal(Buffer.from(leadAttachment.content, 'base64').toString(), '%PDF-1.7 test')
   for (const { html } of bodies) {
     assert.ok(!html.includes('<script>'), 'raw <script> reached the email')
     assert.ok(!html.includes('<img'), 'raw <img> reached the email')
